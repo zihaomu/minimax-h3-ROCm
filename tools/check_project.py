@@ -11,7 +11,9 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_DIRS = ("src", "integrations", "configs", "docs", "tools", "tests", "third_party")
 PUBLIC_DOCS = {"docs/RESULTS.md", "docs/results.json"}
-PRIVATE_DIRS = {"vibe", "doc", "archive", "models", ".runtime", "runs"}
+PRIVATE_DIRS = {"vibe", "doc", "archive", "models", ".runtime", "runs",
+                "logs", "outputs", "results", "references", "build",
+                ".cache", ".deps", ".tools", ".venv"}
 PUBLIC_FILES = ("README.md", "LICENSE", "AGENTS.md", ".gitignore",
                 "__init__.py", "nodes.py", "pyproject.toml", "requirements.txt")
 
@@ -80,6 +82,7 @@ def main():
                 ["git", "ls-tree", "-r", "--name-only", commit], cwd=ROOT, text=True).splitlines()
             for name in historical:
                 assert name.split("/")[0] not in PRIVATE_DIRS, f"Private path in public ancestry: {name}"
+                assert Path(name).suffix not in (".so", ".hsaco", ".gguf", ".safetensors", ".pt", ".pth", ".bin"), name
                 if name.startswith("docs/"):
                     assert name in PUBLIC_DOCS, f"Full research documents in public ancestry: {name}"
     print(json.dumps({"passed": True, "GPU_work": False, "backends": list(BACKENDS),
