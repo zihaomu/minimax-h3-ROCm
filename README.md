@@ -23,7 +23,7 @@ minimax_h3/
 ├── docs/                      # GitHub关键结果，精简公开摘要
 ├── vibe/                      # 完整本地研究入口，不进入Git
 ├── third_party/               # 原始第三方源码、许可证和来源说明
-├── tools/                     # CPU检查与原生构建工具
+├── tools/                     # CPU检查、原生构建与基准适配
 ├── tests/                     # 配置、分片数学与路径合同
 ├── models/                    # 本地权重，不进入Git
 ├── .runtime/                  # 本机引擎、依赖、缓存与分析环境，不进入Git
@@ -91,11 +91,13 @@ python3 tools/build_attention.py native-tile
 
 ## 文档和历史结果
 
-**本次只整理结构与路径，没有新的GPU或Standard成绩。**
+当前main已完成Standard工程对照：双R9700热运行中位 **213.710秒**；同数学单卡对照 **880.113秒**。
+单卡因外部占用中断后恢复，3次有效热运行来自2个会话，各先完整预热。AV latent和完整FP32解码像素逐元素相同；音频VAE解码waveform跨模式relative L2为1.51e-6，各模式内完全重复。
+原C1精度门仍未通过，本轮为工程比较；完整资格范围见 [关键结果](docs/RESULTS.md)。
 保留原数值门、fresh TE、10 NFE、预览与音频；新路径需真实输入回放后再进行完整Standard。
 GitHub只展示 [关键结果](docs/RESULTS.md)，完整研究上下文从本地 `vibe/README.md` 进入。
 日志、输出、完整参数表、迁移验收与历史文档均在vibe / archive保留，没有删除旧实验。
-只有main用于后续同步，旧研究分支留在本地，本轮没有push。
+GitHub保留main代码与关键结果，完整研究记录保留在本地。
 
 MultiGPU采用MIT；Ix / SageAttention保留Apache-2.0和NOTICE。
 完整版本、许可证与移植范围见 [第三方说明](third_party/README.md)。

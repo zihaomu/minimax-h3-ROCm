@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "scope": "Curated historical highlights, not a benchmark of the reorganized main",
+  "scope": "Curated historical highlights and current-source engineering measurements",
   "workload": {
     "width": 1344,
     "height": 768,
@@ -43,6 +43,20 @@
       "seconds": 230.806024952,
       "measurement": "historical BR512 warm median, 1 warmup + 3 runs",
       "qualification": "repeatability/media/resource review passed; original C1 Standard qualification not passed"
+    },
+    {
+      "id": "r9700_current_single_matched",
+      "hardware": "1x R9700 (GPU0)",
+      "seconds": 880.112894761,
+      "measurement": "median of 3 clean hot runs across 2 sessions, each fully rewarmed",
+      "qualification": "same effective input and byte-equal AV latents/FP32 pixels; waveform relative L2 1.51e-6 as current dual; original C1 failed"
+    },
+    {
+      "id": "r9700_current_dual",
+      "hardware": "2x R9700 (GPU0+2)",
+      "seconds": 213.709983016,
+      "measurement": "1 full warmup + 3 hot requests, hot median",
+      "qualification": "repeat/media/resource and same-output engineering comparison passed; original C1 failed"
     }
   ],
   "matched_historical_optimization": {
@@ -55,11 +69,62 @@
     "summary-0": "48b56550dc28e9b9e87dc5f91a2dff01e2df5ecc42055327df1506a1233f5b0a",
     "summary-1": "81cda4be557adfa81862b82f0660b970a267acf52aff6e1b8fc8acf6aefe00c2",
     "standard-2": "3039059471cc65cb594cfe2e00247a70dc7ecaeb2748eca3fb5d5b5c6faba27f",
-    "comparison-3": "291cc860dfb6428657cbccb72153a312c7af9c31a297bf3e30b90b8d4c7471d8"
+    "comparison-3": "291cc860dfb6428657cbccb72153a312c7af9c31a297bf3e30b90b8d4c7471d8",
+    "current_comparison": "9dda822d23d454eec541b0fbe850e323833da56d69e0b01cb72fe4f9e2d0fc9c",
+    "current_single_admission": "ce33629c8123ecaabec8e834c91d0c07cb49c0ef97a501e56b9a74e5a79f496a",
+    "current_single_initial_manifest": "451ed2b5058d81a4a86f042cee0f016980812ffd00a208707446ef29512af6d4",
+    "current_single_resume_manifest": "058990e82fb993cd1a000d305aea4a1ac9ce1a4c0b70c855722c1182ad6abe58",
+    "current_dual_manifest": "c1f04818930887b866846c181d61150769e31799a76be1b9bf5a8fc279f2edc0",
+    "current_single_adapter": "e057aad92b2a310a55e6c9339f9101dda21c82c076e610f54703e94af37b2983",
+    "current_raw_byte_review": "16f92c9244e2c738e9f40a39ac7a6fbc13c8b3c1a1f2a9acfd7145424a3dff99"
   },
   "rtx5090_public_source": {
     "repository": "https://github.com/ChrisJohnson89/minimax-h3-comfyui",
     "commit": "0409aa4b18767cd7d18de66442671e6dfe7f2ea4"
   },
-  "raw_logs_and_artifacts_in_public_tree": false
+  "raw_logs_and_artifacts_in_public_tree": false,
+  "current_main_engineering_validated": true,
+  "current_main_original_C1_passed": false,
+  "current_single_dual": {
+    "date": "2026-11-11",
+    "source_commit": "7e2832796533075d7b26f50a0ff7c706571a68bd",
+    "attention": {
+      "backend": "reduced_error",
+      "head_chunk": 7,
+      "query_tile": 128
+    },
+    "single_hot_seconds": [
+      474.084955959,
+      880.112894761,
+      1761.529316591
+    ],
+    "dual_hot_seconds": [
+      211.452515241,
+      220.585370694,
+      213.709983016
+    ],
+    "single_complete_warmup_seconds": [
+      756.090126195,
+      791.494837515
+    ],
+    "dual_complete_warmup_seconds": [
+      235.701703274
+    ],
+    "single_model_sessions": 2,
+    "dual_model_sessions": 1,
+    "median_end_to_end_ratio": 4.118258222383125,
+    "time_reduction_percent": 75.71788979707719,
+    "cross_mode_AV_latents_FP32_pixels_byte_equal": true,
+    "cross_mode_waveform_relative_l2": 1.5107793742630276e-06,
+    "within_mode_waveform_byte_equal": true,
+    "original_C1_passed": false,
+    "historical_formal_seconds_replaced": false,
+    "scope": "Engineering comparison using three clean hot requests per mode. Single GPU0 spans two sessions, with a full warmup in each, because external GPU0 entry interrupted the original third request. Dual GPU0+2 is one session with one warmup. No contaminated half-request is included. Not an isolated hardware scaling result or a best-tuned single-GPU engine.",
+    "single_adapter": "tools/standard_single_adapter.py",
+    "native_single_control": {
+      "median_seconds": 1187.950385479,
+      "used_for_matched_ratio": false,
+      "reason": "Different BF16 block math and quantizer domains; with native single as reference, dual video/audio relative L2 43.2067% / 12.2999%"
+    }
+  }
 }
