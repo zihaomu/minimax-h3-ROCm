@@ -1,0 +1,336 @@
+# SageAttention-RDNA4
+
+Quantized attention for AMD Radeon RX 9070 / RX 9070 XT (RDNA4, `gfx1201`) on Windows, and on Linux
+when built from source.
+
+This is a drop-in build of the `sageattention` package. Underneath it is SageAttention 2.2 and the
+gfx12 port from [SageAttention PR #368](https://github.com/thu-ml/SageAttention/pull/368). On top of
+that sit hand-written HIP attention kernels that take over the common case: head_dim 128, in fp16
+or bf16. Against PR #368's own kernels they are **1.5–2.0× faster on causal attention and
+1.06–1.3× faster on non-causal attention** in fp16, and **2.2× and 1.3× faster** in bf16, measured
+over the full call. Since v0.4.0 the quantization step in front of the kernel is hand-written as
+well, so nothing is compiled on first use, and short calls of a few hundred tokens, which took up
+to 1.6× PR #368's time, are now about even with it.
+
+fp16 calls compute Q·K in int8 with one scale per token, which is more precise than fp8 at about the
+same speed. bf16 calls compute Q·K in fp8.
+
+ComfyUI users get it through the normal `--use-sage-attention` switch. No node and no code change
+is needed.
+
+ComfyUI also has its own int8 attention for this card, `--use-ck-attention` (comfy-kitchen, also
+built on the PR #368 work). Measured side by side for v0.5, it was 6–11 % faster per call than this
+package and had 2–4× lower error on real activations (see "Compared with comfy-kitchen" below). If
+you use ComfyUI, try it. This package stays a drop-in `sageattention` for code that calls `sageattn`.
+
+---
+
+## Results
+
+### fp16, against PR #368, full call (quantization included)
+
+Time of this package divided by time of PR #368 on the same tensors. Below 1.0 means faster.
+B=1, H=48, D=128. Each cell is the median of interleaved runs in one process. Measured with the
+fp8 Q·K kernel that was the default in v0.1.0 (`SAGEATTN_SK1_INT8=0` today).
+
+| N | causal | causal + smooth_k | non-causal | non-causal + smooth_k |
+|---|---|---|---|---|
+| 8768 | 0.56 | 0.51 | 0.81 | 0.89 |
+| 8771 | 0.56 | 0.51 | 0.77 | 0.82 |
+| 16384 | 0.65 | 0.58 | 0.85 | 0.94 |
+| 47520 | 0.64 | 0.56 | 0.85 | 0.92 |
+
+The int8 Q·K default against that fp8 kernel, `smooth_k` on:
+
+| N | non-causal | causal |
+|---|---|---|
+| 8771 (Krea2) | 1.000 | 0.983 |
+| 47520 (720p video) | 1.017 | 1.010 |
+
+At image sizes nothing changes. On long, video-sized sequences int8 gives back up to 1.7 % of the
+lead. `SAGEATTN_SK1_INT8=0` takes it back if you prefer speed there.
+
+### bf16, against PR #368's bf16 path, `smooth_k` on
+
+| N | non-causal | causal |
+|---|---|---|
+| 8771 | 0.76 | 0.44 |
+| 47520 | 0.77 | 0.45 |
+
+When the GPU's memory is nearly full, PR #368's bf16 path slows down by up to 1.9× and this one
+does not, so on a full card the gap is wider. The table is measured without that pressure.
+
+### Short calls (v0.4.0)
+
+Every call quantizes K and V before the attention kernel runs. Up to v0.3.0 that was 3–4 Triton
+launches, and on short sequences the launches cost more than the attention itself. v0.4.0 does it
+in 1–2 launches of a prebuilt HIP code object. fp16, B=1, H=48, D=128, non-causal, `smooth_k` on,
+each call timed on its own (synchronized), our time divided by PR #368's:
+
+| N | v0.3.0 | v0.4.0 |
+|---|---|---|
+| 288 | 1.30 | 0.85 |
+| 512 | 1.59 | 1.13 |
+| 1024 | 1.12 | 0.92 |
+| 4096 | 0.89 | 0.87 |
+
+bf16 is within 6 % of these. Back-to-back calls this short are too noisy on this card to time:
+two runs of the same cells disagreed by far more than the effect, so only the one-at-a-time numbers
+are given. At the production sizes in the tables above the two prologues time the same within
+this card's noise (±2 %), so those numbers stand.
+
+It also needs no compiler at run time, and since v0.5 the default path does not even import Triton.
+In a fresh process in ComfyUI's environment the first call takes 0.08 s (v0.4.0: 0.48 s; v0.3.0,
+which compiled Triton kernels on first use: 1.9 s; PR #368's path: 0.24 s). Where Triton cannot
+build its launcher, v0.3.0's prologue could not run and calls fell back to PR #368's path. There is
+no 32-bit limit on sequence length any more (F162, F169).
+
+All of these are ratios. On this card a software clock check can confirm that the clock did not
+move during a block, but it cannot pin the absolute clock. So the absolute milliseconds are not
+quoted here and the ratios are. [docs/METHOD.md](docs/METHOD.md) explains why that matters and
+how each cell was measured.
+
+### In a real render (ComfyUI's Krea2 model, 8 steps)
+
+Seconds per sampling step: median of 9 renders (3 prompts × 3 seeds). Each attention backend was
+called exactly as stock ComfyUI calls it, so every package used its own defaults.
+
+fp16, a Krea2 int8 fine-tune with no LoRAs:
+
+| | 1 MP | 2 MP (1448²) |
+|---|---|---|
+| PyTorch SDPA | 1.029 s | 2.387 s |
+| SageAttention 1.x (community RDNA4 build) | 0.997 s | 2.167 s |
+| **This package** | **0.973 s** | **2.059 s** |
+| attention time per call (this / SDPA) | 5.0 / 9.9 ms | 14.1 / 29.6 ms |
+
+These were taken with the fp8 kernel. Switching to the int8 default changed the step time by
+−0.3 % at 1 MP and −0.05 % at 2 MP.
+
+bf16, Krea2 Turbo (fp8-scaled weights, computing in bf16):
+
+| | 1 MP | 2 MP |
+|---|---|---|
+| PyTorch SDPA | 1.156 s | 2.567 s |
+| SageAttention 1.x (community RDNA4 build) | 1.113 s | 2.330 s |
+| **This package** | **1.076 s** | **2.202 s** |
+
+The hand-written kernels served every self-attention call in these renders. Most of a step is
+spent outside attention, in the model's matmuls, which is why a 2× faster attention call becomes
+a 5–14 % faster step.
+
+### Accuracy
+
+For fp16, Q and K are quantized to int8 and V to fp8 (e4m3), each with **one scale per token**,
+and the attention weights are folded into fp8 before the P·V product. For bf16, Q and K are fp8
+per token instead. Measured on real activations captured from Krea2 and Flux2-Klein:
+
+- **Where the error comes from.** Measured end to end against fp64 attention on 18 real captures,
+  this package's error on ordinary layers is about 1.5× PR #368's path in fp16 and 2× in bf16
+  (median relative RMS 0.0113 vs 0.0074 in fp16, Krea2 at 8 771 tokens). The cause is P·V: the
+  attention weights and V go through fp8 e4m3, which has 3 mantissa bits. On layers with a few
+  extreme keys, such as Krea2's first block, PR #368's one K scale per 64-token block breaks down
+  and its error reaches 4–7× this package's (0.10–0.17 vs about 0.025). The Q·K step on its own,
+  per-token int8 with `smooth_k`, is the more precise scheme on all ten captures of F154; it is
+  the fp8 P·V that dominates the full kernel's error (F168). Inside real Krea2 renders the int8
+  default's per-call error is 0.82× the fp8 kernel's (F157).
+- **`smooth_k` is on by default** and should stay on. Subtracting the per-head key mean before
+  quantizing is exact in real arithmetic, and it reduced the fp8 kernel's error on 10 of 10 real
+  captures, by 3.2× on average (F063). The cost is 0.4–4 % per call.
+- **bf16** error is within 2.4 % of the fp16 fp8 kernel's on every test cell. With values large
+  enough to overflow, it produces non-finite output only where exact fp32 attention overflows too
+  (F158, F159).
+- **v0.4.0 computes the same bytes as v0.3.0** with `smooth_k` off, including all-zero rows, values
+  past fp8's range, and NaN/Inf. With `smooth_k` on, the key mean is now summed in fp64, which is
+  deterministic and more accurate than the old fp32 sum. A small share of outputs differ from
+  v0.3.0 by rounding, with the same error against exact attention (F162, F163).
+
+In the Krea2 render tests the images from this package were closer to full-precision attention
+than SageAttention 1.x's: median PSNR 18.5 vs 13.5 dB at 1 MP and 21.7 vs 15.6 dB at 2 MP in fp16,
+and 23.0 vs 15.0 dB and 18.7 vs 15.0 dB in bf16. Take per-image numbers from an 8-step sampler
+with care, though. A change of 3·10⁻⁶ in the text conditioning alone moves the final latent by
+4–58 %, so single-image differences are mostly trajectory divergence, not precision.
+
+### Compared with comfy-kitchen (`--use-ck-attention`)
+
+ComfyUI ships comfy-kitchen, whose `int8_attention` is behind `--use-ck-attention`. It quantizes Q,
+K and V to int8 and the attention weights to unsigned int8, with a Hadamard rotation of Q and K
+against outliers. Measured on the same tensors, interleaved in one process (comfy-kitchen 0.2.40,
+torch 2.13, B=1, D=128, non-causal), comfy-kitchen's time divided by this package's:
+
+| | N = 4 096 | 8 771 | 16 384 | 47 520 |
+|---|---|---|---|---|
+| fp16, H=48 | 0.92 | 0.91 | 0.90 | 0.90 |
+| bf16, H=48 | 0.94 | 0.93 | 0.92 | 0.92 |
+
+MiniMax-H3's fused-QKV layout, bf16, H=56: 0.92 at N = 27 280 and 61 488.
+
+Full-call error against fp64 attention on real captures (relative RMS):
+
+| | this package | PR #368's path | comfy-kitchen |
+|---|---|---|---|
+| Krea2, 8 771 tokens, median of 8 blocks, fp16 | 0.0113 | 0.0074 | 0.0040 |
+| the same, bf16 | 0.0157 | 0.0077 | 0.0045 |
+| Krea2 block 0 (extreme keys), 4 captures, fp16 | 0.022–0.029 | 0.025–0.175 | 0.010–0.051 |
+
+comfy-kitchen had the lowest error on 16 of 18 captures in fp16 and 15 of 18 in bf16. Most of this
+package's error comes from its fp8 P·V, where comfy-kitchen uses 8-bit integers; that is the next
+thing to change here (F167, F168).
+
+---
+
+### In a video model (MiniMax-H3, w4a8 int4, 864x480, 124 frames)
+
+H3 fuses q, k and v into one projection, so they arrive as views into a single tensor and `k`'s row
+stride is `3*H*D`, not its own width. Earlier releases refused that layout, which meant the call
+quietly ran PR #368's path even with `SAGEATTN_SK1_BF16=1` set. v0.3 serves it.
+
+The margins are ratios, not milliseconds: this GPU's clock cannot be pinned (see F073), so every
+timing block is ratio-only, and every ratio in this section is our time divided by PR #368's, so
+below 1 means we are faster. End to end in the same workflow, the sampling phase takes **0.950** of
+PR #368's time at 4 steps and **0.847** at 8 steps, which is 5 % and 15 % faster, same checkpoint and
+seed. Loading dominates the wall clock, so the "Prompt executed" totals do not resolve this and are
+not quoted as a speedup.
+The sweep stops at N = 99 792 because that is where the launch's 32-bit addressing runs out, not
+because the margin does.
+
+## Install
+
+The prebuilt wheels target exactly this stack:
+
+- Windows 10/11, Python 3.12
+- AMD Radeon RX 9070 or RX 9070 XT (`gfx1201`); the RX 9060 XT (`gfx1200`) is opt in, see below
+- PyTorch `2.13.0+rocm10.0.0` or `2.14.0+rocm10.1.0` (the ROCm Python packages AMD publishes for
+  gfx120X). There is one wheel for each; the one with `-214-` in its name is for 2.14
+
+Download the wheel for your PyTorch from [Releases](../../releases) and install it into the Python
+environment that runs your models. For ComfyUI that means ComfyUI's own venv. Close ComfyUI first.
+
+```
+python -m pip install --no-deps sageattention-2.2.0+amd.gfx12.5-cp312-cp312-win_amd64.whl       # PyTorch 2.13
+python -m pip install --no-deps sageattention-2.2.0+amd.gfx12.5-214-cp312-cp312-win_amd64.whl   # PyTorch 2.14
+```
+
+`python -c "import torch; print(torch.__version__)"` tells you which PyTorch you have. Both wheels
+compute bit-identical output; installed next to the wrong PyTorch, the import stops and names the
+version it needs.
+
+`--no-deps` keeps pip from touching your PyTorch install. The compiled extensions are built
+against that exact PyTorch version. For any other version, build from source (see below).
+
+### Linux
+
+There is no prebuilt Linux wheel, but the kernels load on Linux too, thanks to
+[boxwrench](https://github.com/boxwrench) ([#1](https://github.com/IxMxAMAR/SageAttention-RDNA4/pull/1)). It was tested on a Radeon AI PRO R9700, which is
+also `gfx1201`, under Ubuntu 24.04 with PyTorch `2.9.1+rocm7.2.1`. Build from source with
+`PYTORCH_ROCM_ARCH=gfx1201`; [docs/LINUX.md](docs/LINUX.md) has the steps. Since
+v0.4.0 the build records the PyTorch version it was built against and the runtime check compares
+with that, so a source build against your own PyTorch passes without any override.
+
+## Use
+
+```python
+from sageattention import sageattn
+
+out = sageattn(q, k, v, tensor_layout="HND", is_causal=False)   # q, k, v: (B, H, N, D)
+```
+
+ComfyUI: start it with `--use-sage-attention`.
+
+The hand-written kernels are used automatically when **all** of these hold. Anything else goes to
+the gfx12 kernel from PR #368, with the same results contract:
+
+- the GPU is `gfx1201` (or `gfx1200` with `SAGEATTN_SK1_GFX1200=1`), the HIP runtime resolves,
+  and the code object loads;
+- fp16 or bf16 inputs and head_dim 128;
+- HND or NHD layout, contiguous or any view whose strides the kernel can address: the last axis
+  contiguous, strides that are multiples of 8 elements, a 16-byte-aligned start. That covers the
+  usual ComfyUI paths and the fused-QKV views MiniMax H3 passes;
+- query length equal to key length, either fully causal or non-causal;
+- no attention mask, `return_lse=False`, `smooth_v=False`.
+
+An fp16 call tries the int8 Q·K kernel first, then the fp8 kernel, then PR #368's. A bf16 call
+tries the bf16 kernel, then PR #368's.
+
+| environment variable | effect |
+|---|---|
+| `SAGEATTN_SK1_BACKEND` unset | default: use the kernels where they apply, fall back silently elsewhere |
+| `SAGEATTN_SK1_BACKEND=0` | never use them |
+| `SAGEATTN_SK1_BACKEND=1` | strict: raise instead of falling back when the kernels cannot load or the GPU is not `gfx1201` |
+| `SAGEATTN_SK1_INT8` unset | default: int8 Q·K for fp16 calls |
+| `SAGEATTN_SK1_INT8=0` | fp8 Q·K for fp16 calls, bit-identical to v0.1.0 |
+| `SAGEATTN_SK1_INT8=1` | strict: raise instead of falling back when the int8 kernel is missing or fails to load, or for a head_dim 64 call |
+| `SAGEATTN_SK1_BF16` unset | default: bf16 calls use the hand-written kernel |
+| `SAGEATTN_SK1_BF16=0` | bf16 calls go to PR #368's path, as in v0.1.0 |
+| `SAGEATTN_SK1_BF16=1` | strict: raise instead of falling back when the bf16 kernel is missing or fails to load, or for a head_dim 64 call |
+| `SAGEATTN_SK1_PROLOGUE` unset | default: quantize K and V with the prebuilt HIP prologue |
+| `SAGEATTN_SK1_PROLOGUE=triton` | use v0.3.0's Triton prologue instead |
+| `SAGEATTN_SK1_GFX1200=1` | allow the hand-written kernels on an RX 9060 XT (`gfx1200`). Off by default because nobody has run them on that card yet; the device always picks its own builds, so the switch does nothing on a `gfx1201` card |
+
+The variables are read once, when the package is imported. `SAGEATTN_SK1_BACKEND=0` turns all of
+them off. The same switches exist per call: `sageattn(..., sk1_backend=, sk1_int8=, sk1_bf16=)`.
+
+Strict mode is about loading the kernels, not about the list above. A call outside it (a mask,
+`return_lse`, an unsupported stride pattern) still falls back silently with a switch set to `1`.
+To see whether a call is served, call `sageattention.sk1_backend.try_sk1_t1(q, k, v,
+tensor_layout=...)` directly: it returns `(None, reason)` for a call it refuses.
+
+If the kernels cannot be used at all, for example on a different GPU, the package logs one line
+per process and carries on with the fallback.
+
+## Build from source
+
+[docs/BUILD.md](docs/BUILD.md) covers the native extensions (`setup.py`, ROCm SDK,
+`PYTORCH_ROCM_ARCH=gfx1201`) and rebuilding the kernels' code objects from `kernels/hip/` with
+`tools/build_hsaco.py`.
+
+## How this was built
+
+- [docs/JOURNEY.md](docs/JOURNEY.md): the whole path, from a Triton kernel that lost to PR #368
+  to hand-written kernels that beat it, including the dead ends.
+- [docs/FINDINGS.md](docs/FINDINGS.md): every finding, confirmed or refuted, with its numbers.
+- [docs/METHOD.md](docs/METHOD.md): how measurements were taken, and the mistakes that shaped
+  those rules.
+
+## Limitations
+
+- The prebuilt kernels target `gfx1201`, plus `gfx1200` behind a switch. The `gfx1200` builds have
+  the same machine code as the `gfx1201` ones but have not been run on that card yet
+  ([docs/GFX1200-TESTING.md](docs/GFX1200-TESTING.md)). Other GPUs use the fallback path.
+- Every speed and accuracy number here was measured on Windows. Linux results from two testers,
+  with torch 2.9.1 and a torch 2.14 nightly, are in [docs/LINUX.md](docs/LINUX.md).
+- head_dim 128 only. Two head_dim 64 kernels were built and tested, the second on the new prologue,
+  and both were slower than PR #368's, so head_dim 64 still uses the fallback (F156, F165).
+- Accuracy: on ordinary layers the full call's error is about 1.5–2× PR #368's path and 2–4×
+  comfy-kitchen's, because P·V runs in fp8 (see Accuracy).
+- On long sequences (around 47k tokens, non-causal) the int8 default is up to 1.7 % slower per
+  attention call than the fp8 kernel.
+- End to end, the package has been run in Krea2 (fp16 and bf16) and MiniMax-H3 (bf16). The kernels
+  themselves are checked bit for bit across shapes and layouts, and against an fp64 reference.
+
+## A note from me
+
+I've been busy with my day job and haven't had much time for this. I think the kernel itself could
+still improve, but the returns are marginal now, and most of what is left is Triton and the HIP
+toolchain rather than the attention kernel. If I could, I'd ship this with my own libraries for both
+of them -- but testing and modifying them takes far too long on one GPU.
+
+I've built this with AI coding tools. They wrote most of the kernel code, ran the tests across
+the whole matrix and summarized the findings. I chose what to try, read the results and decided
+what shipped, and nothing went in without passing the bit-for-bit and timing checks in
+docs/METHOD.md. The failures are written up next to the wins in docs/FINDINGS.md.
+
+v0.5 is the clean-up: the kernels are named after what they do, dead code is gone, and the first
+call no longer imports Triton. Measuring against comfy-kitchen for it showed where this package
+falls short: the fp8 P·V costs accuracy. Next up is an 8-bit integer P·V, then head_dim 64, which
+needs a new design after two slower attempts. Neither is a quick job.
+
+## Credits and license
+
+Apache-2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+- [SageAttention](https://github.com/thu-ml/SageAttention) by the THU-ML group: the
+  quantized-attention method and the package this builds on.
+- The gfx12 port in [PR #368](https://github.com/thu-ml/SageAttention/pull/368) by [jammm](https://github.com/jammm) and [0xDELUXA](https://github.com/0xDELUXA), which
+  provides the native fallback kernels and the baseline this work is measured against.
+- [boxwrench](https://github.com/boxwrench), for Linux support in the kernel loader ([#1](https://github.com/IxMxAMAR/SageAttention-RDNA4/pull/1)).

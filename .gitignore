@@ -1,0 +1,47 @@
+# Local weights and historical work never enter the public branch.
+/models
+/archive
+/vibe
+
+# Runtime dependencies, environments, caches and new outputs.
+/engines
+/.runtime
+/.cache
+/.deps
+/.venv
+/.tools
+/runs
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+/dist/
+
+# Keep retired root names ignored; only the documented hidden compatibility links remain.
+/scripts
+/doc
+/minimax_h3_multi_gpu
+/logs
+/outputs
+/results
+/references
+/build
+/README.txt
+/.research
+/.rocprofv3
+/.standard-opt-state
+/.worktrees
+
+# Avoid adding weights or generated native binaries outside local folders.
+*.safetensors
+*.gguf
+*.ggml
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.so
+*.hsaco
+*.o
+.env
+.env.*

@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "project_repository": "https://github.com/zihaomu/minimax-h3-ROCm",
+  "upstreams": {
+    "multigpu": {
+      "repository": "https://github.com/Kaihui-AMD/ComfyUI-MiniMaxH3-MultiGPU",
+      "commit": "ebf3953f6385360ef211d93e4ecf23696599eaa3"
+    },
+    "attention": {
+      "repository": "https://github.com/IxMxAMAR/SageAttention-RDNA4",
+      "commit": "7ead14d2744620429602da6c58e7803daf518321"
+    },
+    "comfyui": {
+      "repository": "https://github.com/Comfy-Org/ComfyUI",
+      "commit": "0764232429b8cfb10b79b6f186c8cb23e0b22897"
+    }
+  },
+  "original_local_head": "a1a34702759bbf4b4b803c98723fe4b969f18bcb",
+  "vendor_modified": false,
+  "vendor_files_sha256": {
+    "sageattention/quant.py": "fdf3cf913a4d906ba89b851233ba15d1ee6586017edcd89a8cdfebb2de04b9ae",
+    "sageattention/_version.py": "c3e5dba672bf7c1f7fac9f3170e1c70eb483951b29d5a46b954a97274d2ffc6b",
+    "sageattention/core.py": "b3e276977403faafa76337d5e388e7d24d2cefdc607ba9ce6b407ce42537b39b",
+    "sageattention/__init__.py": "809a001604fa72e4a73fefcea226190e5f3462a0b46626b6369b72f1135ff094",
+    "sageattention/triton/attn_qk_int8_per_block.py": "f7563994203a2bb95282ac3474beb8df59391d2b1c268b8757477cc59203250b",
+    "sageattention/triton/quant_per_block.py": "990b4881fb5e8d70b59fa7b796dab20693c82761175ee51fc4c5329d51e1d377",
+    "sageattention/triton/attn_qk_int8_per_block_causal_varlen.py": "a458da1f01e55a401897269d97da679c1e96b85e56b7fac15aeb8e5ad2b2bb6e",
+    "sageattention/triton/quant_per_thread.py": "e8aa4dfc16780326b90a9235439a0cb77875ff75d7c5376a1aac6adc82f4d643",
+    "sageattention/triton/quant_per_block_varlen.py": "8b4934304dcd59b202a67c8b668487f69caa9567c3e0a6dcb539fd0c24424e4f",
+    "sageattention/triton/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sageattention/triton/attn_qk_int8_block_varlen.py": "d95ef1c80e68cb11e39900ea9b2a41a96c7106544f3f0d0df45cf196dc821543",
+    "sageattention/triton/attn_qk_int8_per_block_causal.py": "3ade134aca600b863ae00cd59773d1e3d7823f055523aa71bb69acf6c35c3ded",
+    "sageattention/sk1_backend/quant_kv_v8t_n.py": "8154aed51d2fb748c7bb041968e6fd73e4c0c490910beeb08f577d7c837bdf38",
+    "sageattention/sk1_backend/sk1_loader.py": "4ba5a02997822e9a160910128f647889f37daf713fae08156609937080dc4de4",
+    "sageattention/sk1_backend/hip_prologue.py": "a20add2456392f78617683ac2f4ada437d23a80a41260d90d68c2456a316d0c6",
+    "sageattention/sk1_backend/quant_triton.py": "89d5d2c3b07734d7f5eb0927d322eb2602bae04a08988119c886c4caeb5bbedc",
+    "sageattention/sk1_backend/__init__.py": "911f39254aecde1cb53ccb1844a42618f7fbd4004a6a50c434fa7ac349f31dad",
+    "sageattention/sk1_backend/quant_kv_v8t.py": "ad9163f1491b2d78790cd4240b2ea70ed6be7fb7dfd2377dad80449030b1613e",
+    "sageattention/sk1_backend/quant_kv_v8t_i8.py": "48fd56be5fb4785eb2ae4b638d30144ecf7bad3a265cd9339ff375885ede56e7",
+    "sageattention/sk1_backend/quant_kv_v8t_i8_n.py": "20bd20ec7a1d9be0f9e7c26d3fb3058c117211195121c69e9c78cbb944a7c285",
+    "sageattention/sk1_backend/quant_kv_v8t_b.py": "fec29aacb4a53726300e290b1bed16db5b86016494ef77271018e0a71662e4f0",
+    "csrc/numeric_conversion.cuh": "fe896c48a90163f70759457c6b590b2a838aa80c56a20a2bf4cea649a745d0da",
+    "csrc/cp_async.cuh": "1f209bff2b88dd998756b179985d63b591892d8e2b70a03dbf082c2c8bf3fe18",
+    "csrc/utils.cuh": "7537c4be65077441743b5fe060b542c4fa7cd11e743925da902d4b9bacea5a25",
+    "csrc/dispatch_utils.h": "495530b01f786c43ec56f79a7bdbb11f42872ec9efa5d612b84d42afbd2ea28c",
+    "csrc/reduction_utils.cuh": "bdc1dcbf1ea06c3d1ebdfd864c41826de62038696e9673551cfb8e02f5f5b389",
+    "csrc/qattn/qk_int_sv_gfx12_native_prepare.cu": "4115334319e45da1c0f9ffe7eeb67903a2c452f46d558d136ab51abadc1e2661",
+    "csrc/qattn/attn_gfx12_native.h": "76580a2ff925fb9ccc9cd4bcbd1c61757d460186f1747eeb03362797f7828c2f",
+    "csrc/qattn/qk_int_sv_gfx12_native_attn_fp8.cu": "daa691be7455509717d044041d612b2c5e2bb3c0c9a15fed64255fece3f4ccec",
+    "csrc/qattn/qk_int_sv_gfx12_native_aux.cu": "1c6c1ce507013550860593caf17a6e1e83e07dac6cbaacf67224ffa45bc8f0fa",
+    "csrc/qattn/qk_int_sv_gfx12_native_attn_f16.cu": "b307d71db0fc70091b24bb8a47bac5896f6643580c619cdeb4e583e97353ac5b",
+    "csrc/qattn/pybind_gfx12_native.cpp": "8b38b83fde151949f4b0ca23fb9aa13986c195a3dfb260fc4577e2117aeb48a5",
+    "csrc/qattn/qk_int_sv_gfx12_native.cu": "ff7b49104935f002fb70d63ec650ebf7ad2925e5307ab3aa105fdbf6bb41e5d9",
+    "csrc/qattn/qk_int_sv_gfx12_native_rawq_fp8.cu": "0b1aa214012ef4b399a4dfbeae06a93d093255a6c11a7acd5c94e5f88e4551c3",
+    "csrc/fused/fused.h": "4939aa5ed5225df9bfb9bf2a53c6a30ccf19b9e12b80c97d958d10e7dae2ba4e",
+    "csrc/fused/fused.cu": "c80bb851c951f6cdddfc4111c2dd1b999bda49af99e83238fc0d28a81ddedd55",
+    "csrc/fused/pybind.cpp": "b08f3638b5bb41476c53945a3639a61218e9522d65bf4865c4aa765c06eca48a",
+    "kernels/hip/attn_fp8qk_bf16.hip": "61364ddb536841c0d0c9f5fd72f1c011e700d7a399d4c4886ad448f28c51e805",
+    "kernels/hip/attn_int8qk_f16.hip": "ad45d1497d0e77ca98d1338ee76b57123a354ae288780aa61343c3f972e8db31",
+    "kernels/hip/kv_prologue.hip": "5b4186d839771185081a585dd0b8a41a0485848356059aac1088890ffb5430b3",
+    "kernels/hip/attn_fp8qk_bf16_strided.hip": "b7b1c00582559224557e9ddb06645ef4bffdbaa819d5940f93f904111467aefc",
+    "kernels/hip/attn_fp8qk_f16.hip": "d0345bfa644627ce1e07c3d7c10f10db6db56bad53597e5942d20612764345c8",
+    "kernels/hip/attn_fp8qk_f16_strided.hip": "3057620e0a07d470319a2d8f7a0ffd932db0043331e8c62fdb876d42309f4e50",
+    "kernels/hip/attn_int8qk_f16_strided.hip": "00460f4cf2290fe253c921307de2018553e79f26a7ff6cfec7a0cced118152c5",
+    "LICENSE": "178f46f58127373d449565589a32c2b5b60c082934618c17b7ce6890c61ef394",
+    "NOTICE": "8bdd198b5a77e5d4013374fc8b3f4930a02697b50420036304ea49b3de330bcd",
+    "README.md": "89b4856d4f1f2f825dd648761760e01844860a126307ed4bcfbe0cd2821abe94",
+    "setup.py": "d086fc0982c4840093542541389b3521ed22fff43ce3fee33d525511b2d4706d",
+    "tools/build_hsaco.py": "35722739460fad4e3e9f32f745899f16303db310bb56ba7f7b93ddf4c4ef933c"
+  },
+  "derived_files": [
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/quant_shard.py",
+      "source_sha256": "5916c19fca407ba83ef200cae902e02552a71f7fe2d13af21c59b55bf12650ae",
+      "destination": "src/minimax_h3_amd_sp/quant_shard.py",
+      "destination_sha256": "5916c19fca407ba83ef200cae902e02552a71f7fe2d13af21c59b55bf12650ae",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/runtime.py",
+      "source_sha256": "af388657779fe1d7345f7148998a0cc8a9cae1c580075e911820a7f20c0e1c66",
+      "destination": "src/minimax_h3_amd_sp/runtime.py",
+      "destination_sha256": "af388657779fe1d7345f7148998a0cc8a9cae1c580075e911820a7f20c0e1c66",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/peer_ops.py",
+      "source_sha256": "b22664646f441654bbd1814fc06dbf10c23a0e43d1dd347380d3d2ecfe2bb244",
+      "destination": "src/minimax_h3_amd_sp/peer_ops.py",
+      "destination_sha256": "b22664646f441654bbd1814fc06dbf10c23a0e43d1dd347380d3d2ecfe2bb244",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/worker.py",
+      "source_sha256": "bab109a8210cbd6f6398d479ea7fc6f34a5acb9f6b43f4c9e110e1e24978be00",
+      "destination": "src/minimax_h3_amd_sp/worker.py",
+      "destination_sha256": "adbfe96774d1279748689de55270c48a1cf986a96f7c991b94ca706054df0143",
+      "byte_identical": false
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/parallel_blocks.py",
+      "source_sha256": "224bf3a8e8a7755335ef87600be39de50a4e279736839e9e11289274babf012f",
+      "destination": "src/minimax_h3_amd_sp/parallel_blocks.py",
+      "destination_sha256": "224bf3a8e8a7755335ef87600be39de50a4e279736839e9e11289274babf012f",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/h3_forward.py",
+      "source_sha256": "8673dbc90d5d932820bed87ecb8bdcb8c490cc5386a50f4154bbbd610755d8ca",
+      "destination": "src/minimax_h3_amd_sp/h3_forward.py",
+      "destination_sha256": "8673dbc90d5d932820bed87ecb8bdcb8c490cc5386a50f4154bbbd610755d8ca",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/partition.py",
+      "source_sha256": "8815c98445658c6b4b991b440017a03df3fb7bc3c34a0772912b7b1083665e09",
+      "destination": "src/minimax_h3_amd_sp/partition.py",
+      "destination_sha256": "8815c98445658c6b4b991b440017a03df3fb7bc3c34a0772912b7b1083665e09",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/__init__.py",
+      "source_sha256": "cc733bb945cf972deb57550e089287394baf4892ac2a6b2e9a6cb8ada26ceb07",
+      "destination": "src/minimax_h3_amd_sp/__init__.py",
+      "destination_sha256": "cc733bb945cf972deb57550e089287394baf4892ac2a6b2e9a6cb8ada26ceb07",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/model_prep.py",
+      "source_sha256": "503e01889a59a9965dc0d6e4c420002a58a15c1f36ea4cb9db6b9f31fcc2deec",
+      "destination": "src/minimax_h3_amd_sp/model_prep.py",
+      "destination_sha256": "503e01889a59a9965dc0d6e4c420002a58a15c1f36ea4cb9db6b9f31fcc2deec",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/nodes.py",
+      "source_sha256": "9dfaae23c0769f6be4cf7daa87f5ec12ed7656e0757f54dd40bd0dab4ffa5854",
+      "destination": "integrations/comfyui/nodes.py",
+      "destination_sha256": "454229205626d7c3e345af4713f4ffe4d70f8e63996ec3b0484c5521e3f62315",
+      "byte_identical": false
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/__init__.py",
+      "source_sha256": "c658b46ad9782ecc5a1c020451bd2a5953a2fdb66755f22e7721d63cdc8ebf53",
+      "destination": "__init__.py",
+      "destination_sha256": "c658b46ad9782ecc5a1c020451bd2a5953a2fdb66755f22e7721d63cdc8ebf53",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/scripts/standard_opt/ixmx_rdna4/backend.py",
+      "source_sha256": "b9c29aaa20f02121501d2b32a1b7835eba889c912788a9f195197ea2da542e14",
+      "destination": "src/minimax_h3_attention/ix/backend.py",
+      "destination_sha256": "b57f6982a5f2a6bbaea5d55d96105c1d682247367e49c36cb30a9a1fffc1b87a",
+      "byte_identical": false
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/scripts/standard_opt/ixmx_rdna4/build.py",
+      "source_sha256": "7c73c5292314a831ca62f23f8553e7ed34bd9b4406a77926b4fa31f1f84be21a",
+      "destination": "src/minimax_h3_attention/ix/build.py",
+      "destination_sha256": "b4aea391d3eccf7eb57e411faa66522b5e005a28d1250607790f95b1aa5c0057",
+      "byte_identical": false
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/scripts/standard_opt/ixmx_rdna4/prefix_candidate.py",
+      "source_sha256": "4938321b9889448d5c4fd3ad1062e74c1a7827d5857ddd6a90daa7e7fb64f6f6",
+      "destination": "src/minimax_h3_attention/ix/prefix_candidate.py",
+      "destination_sha256": "edfa811a9bc163414d7624dadcf2791832de07aabc64cb56417a6d9e7a3de5a7",
+      "byte_identical": false
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/scripts/standard_opt/ixmx_rdna4/prefix_native.py",
+      "source_sha256": "a99e8bf1b6b54fb872c44d35553757de1cfd0b0e44eadd2575ea0b64732dd59b",
+      "destination": "src/minimax_h3_attention/ix/prefix_native.py",
+      "destination_sha256": "a99e8bf1b6b54fb872c44d35553757de1cfd0b0e44eadd2575ea0b64732dd59b",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/scripts/standard_opt/ixmx_rdna4/upstream.json",
+      "source_sha256": "345c570b27844eb497bbf0cdf5d72cb9abd9f922f7b4b9b2ac248b978d7e812e",
+      "destination": "src/minimax_h3_attention/ix/upstream.json",
+      "destination_sha256": "345c570b27844eb497bbf0cdf5d72cb9abd9f922f7b4b9b2ac248b978d7e812e",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/scripts/amd_sage_attention.py",
+      "source_sha256": "0f9b18203020769bc770beb2c0586e7b7a06cc15a626ac41b1aa7ad82035dc15",
+      "destination": "src/minimax_h3_attention/_frozen/amd_sage_attention.py",
+      "destination_sha256": "0f9b18203020769bc770beb2c0586e7b7a06cc15a626ac41b1aa7ad82035dc15",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/scripts/standard_rocm_backend.py",
+      "source_sha256": "930417f33d642bd3b6d338117a735b3cf7f3c7fe8daf3fdc3e8819077e9628d5",
+      "destination": "src/minimax_h3_attention/_frozen/rocm_backend.py",
+      "destination_sha256": "930417f33d642bd3b6d338117a735b3cf7f3c7fe8daf3fdc3e8819077e9628d5",
+      "byte_identical": true
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/optimization/s09_native_attention_tile/adapter.py",
+      "source_sha256": "11b7ea414d13bb68f6b573e480a59027d5750e774d69900ad88f70b40899826f",
+      "destination": "src/minimax_h3_attention/native_tile/adapter.py",
+      "destination_sha256": "25836e88230828b6f54e5b23e3db2e3a40d609095c750f9082de47ba25341f18",
+      "byte_identical": false
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/optimization/s09_native_attention_tile/build.py",
+      "source_sha256": "2304c95a0e865395b6221ae0947ee2ee69ba49666a34648f7823180933a57228",
+      "destination": "src/minimax_h3_attention/native_tile/build.py",
+      "destination_sha256": "2d45190970d0f2cc9d81fa3dd2c47a4cf197035f000e33e1ffb37ef1e35f1d96",
+      "byte_identical": false
+    },
+    {
+      "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/optimization/s09_native_attention_tile/entry.hip",
+      "source_sha256": "fd05eda03270085b2635bf3de76fbc84bfdebc759e4f98d296c53b7662cc949b",
+      "destination": "src/minimax_h3_attention/native_tile/entry.hip",
+      "destination_sha256": "fd05eda03270085b2635bf3de76fbc84bfdebc759e4f98d296c53b7662cc949b",
+      "byte_identical": true
+    }
+  ],
+  "migration_GPU_work": false,
+  "GPU_qualification_status": "New source/layout identity requires real-input replay; no Standard score transferred",
+  "layout": "src packages + integrations/comfyui; metadata in configs/provenance"
+}

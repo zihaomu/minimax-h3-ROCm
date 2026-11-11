@@ -1,0 +1,16 @@
+{
+  "runtime": {
+    "rocm": "10.1.0",
+    "torch": "2.14.0+rocm10.1.0",
+    "hip": "7.16.26385",
+    "triton": "3.8.0+git669b31ac.rocm10.1.0",
+    "gpu_arch": "gfx1201",
+    "container_image_id": "sha256:a79c374ab2bc93c0e4358da6c7bda5cb84cf1308e8aff74fc99fc95c511cbd03",
+    "gpu_launcher": "scripts/sage_rocm10.sh"
+  },
+  "gpu_arch": "gfx1201",
+  "physical_gpu_excluded": [
+    3
+  ],
+  "layout_note": "runtime.gpu_launcher is retained verbatim as original native-build identity metadata. The archived launcher is archive/legacy-20261111/scripts/sage_rocm10.sh; it is not a root source directory."
+}

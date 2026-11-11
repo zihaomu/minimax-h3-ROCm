@@ -1,0 +1,89 @@
+{
+  "experiment_id": "chris-5090-standard",
+  "title": "主对标实验",
+  "status": "configuration_only; reorganized source requires new replay/Standard qualification",
+  "reference_gpu": {
+    "model": "NVIDIA GeForce RTX 5090",
+    "count": 1
+  },
+  "target_gpu": {
+    "model": "AMD Radeon AI PRO R9700",
+    "count": 2
+  },
+  "reference_reported_wall_seconds": 85.23,
+  "timing_state": "warm, new seed",
+  "timing_scope_published": "Complete ComfyUI prompt execution including prompt encoding, 10-step sampling, animated latent preview, video and stereo audio VAE decode, MP4 creation, and save",
+  "generation": {
+    "mode": "FL2VA text-to-audio-video",
+    "width": 1344,
+    "height": 768,
+    "frames": 124,
+    "fps": 24.0,
+    "seed": 424242424244,
+    "prompt": "A cinematic medium-wide shot of a woman standing on a rain-slick neon street at night. She turns toward camera as a tram passes behind her, reflections moving naturally across the pavement. Slow controlled dolly-in, realistic body motion, stable face and clothing, rich depth and natural motion blur. [background_audio] soft rain, distant city traffic, tram wheels, subtle atmospheric music.",
+    "steps": 10,
+    "sampler": "res_multistep",
+    "scheduler": "simple",
+    "denoise": 1.0,
+    "lora": "disabled; all slots None",
+    "attention_node": "MiniMaxH3MemoryEfficientSageAttentionPatch",
+    "preview": {
+      "max_resolution": 384,
+      "jpeg_quality": 80,
+      "suppress_default_preview": true,
+      "preview_frames": 12,
+      "preview_fps": 12,
+      "tiny_vae": "none",
+      "model": [
+        "138",
+        0
+      ]
+    }
+  },
+  "models": {
+    "diffusion": "MiniMaxH3/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+    "text_encoder": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+    "video_vae": "MiniMaxH3/minimax_h3_video_vae_fp16.safetensors",
+    "audio_vae": "MiniMaxH3/minimax_h3_audio_vae_fp32.safetensors"
+  },
+  "inputs": {
+    "prompt": "inputs/prompt.txt",
+    "executed_api": "inputs/executed-api.json",
+    "replay_ui": "inputs/replay-ui.json",
+    "source_image": null,
+    "source_video": null,
+    "source_audio": null
+  },
+  "outputs": {
+    "reference_video": "outputs/reference-5090.mp4",
+    "preview": "outputs/preview.png",
+    "media_check": "outputs/media-check.json"
+  },
+  "common": {
+    "published_results": "../source/published-results.json",
+    "environment": "../source/environment.json",
+    "model_files": "../source/model-files.json"
+  },
+  "not_explicit_in_executed_graph": {
+    "sigma_shift": null,
+    "audio_shift": null,
+    "rng_algorithm": null,
+    "explicit_cfg_scale": null
+  },
+  "guider": "BasicGuider; no explicit numeric CFG widget in the source graph",
+  "provenance": {
+    "source_repo": "https://github.com/ChrisJohnson89/minimax-h3-comfyui",
+    "source_commit": "0409aa4b18767cd7d18de66442671e6dfe7f2ea4",
+    "source_video_url": "https://github.com/ChrisJohnson89/minimax-h3-comfyui/blob/0409aa4b18767cd7d18de66442671e6dfe7f2ea4/media/minimax-h3-standard-t2v.mp4",
+    "source_video_sha256": "1617c037b331e9cfdd1e61e527e2c7f87242da37062e15fee957e916c1427532",
+    "executed_api_from_mp4_metadata": true,
+    "replay_ui_derivation": "Local copy of author UI template, synchronized to executed graph prompt/seed/duration/quality; seed control set fixed."
+  },
+  "limitations": [
+    "Reported GPU time is publisher measurement, not independently rerun on a 5090 here.",
+    "Source does not publish the weight file hashes or complete custom-node revision pins.",
+    "Per-node cache hits and repeated timing samples are not published.",
+    "Exact NVFP4/SageAttention implementation availability on AMD is not yet qualified.",
+    "Code graph and media establish executed inputs; they do not authenticate the reported elapsed time."
+  ]
+}

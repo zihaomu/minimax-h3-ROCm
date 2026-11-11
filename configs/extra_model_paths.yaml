@@ -1,0 +1,7 @@
+# Pass this file to ComfyUI using --extra-model-paths-config.
+# base_path is relative to this YAML file; weights remain in the repository's models/.
+minimax_h3_rocm:
+  base_path: ../models/Comfy-Org-MiniMax-H3
+  diffusion_models: diffusion_models
+  text_encoders: text_encoders
+  vae: vae

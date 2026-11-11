@@ -1,0 +1,101 @@
+# MiniMax H3 ROCm
+
+基于 [Kaihui-AMD/ComfyUI-MiniMaxH3-MultiGPU](https://github.com/Kaihui-AMD/ComfyUI-MiniMaxH3-MultiGPU) 的 AMD R9700 双卡推理项目。
+使用 ComfyUI 的 H3模型、token / QKV head分片和RCCL通信，提供五种可明确选择的attention。
+目标仓库：[zihaomu/minimax-h3-ROCm](https://github.com/zihaomu/minimax-h3-ROCm)。
+
+## 从哪里开始
+
+| 目的 | 入口 |
+|---|---|
+| 修改推理核心 | `src/minimax_h3_amd_sp/` |
+| 修改或选择attention | `src/minimax_h3_attention/` |
+| 修改ComfyUI节点 | `integrations/comfyui/nodes.py` |
+| 查看配置、模型清单、工作流 | `configs/` |
+| 查看关键结果 | [公开结果摘要](docs/RESULTS.md) |
+| 继续本地研究 | `vibe/README.md`（本地保留，不上传） |
+
+```text
+minimax_h3/
+├── src/                       # 推理和attention源代码
+├── integrations/comfyui/       # ComfyUI适配；根nodes.py仅转发
+├── configs/                   # 环境锁、模型清单、workflows、provenance
+├── docs/                      # GitHub关键结果，精简公开摘要
+├── vibe/                      # 完整本地研究入口，不进入Git
+├── third_party/               # 原始第三方源码、许可证和来源说明
+├── tools/                     # CPU检查与原生构建工具
+├── tests/                     # 配置、分片数学与路径合同
+├── models/                    # 本地权重，不进入Git
+├── .runtime/                  # 本机引擎、依赖、缓存与分析环境，不进入Git
+├── runs/                      # 后续输出，不进入Git
+└── archive/                   # 旧代码、实验与原始证据，不进入Git
+```
+
+## 本地检查
+
+以下命令不占GPU，不加载模型正文：
+
+```bash
+python3 tools/check_project.py
+python3 tools/check_models.py
+python3 tools/show_config.py
+PYTHONPATH=src python3 -m unittest discover -s tests -p 'test_attention_config.py'
+```
+
+Python源码统一通过 `src/` 导入，两个rank和构建器使用相同路径约定。
+[工作流示例](configs/workflows/two_gpu_api.json)是生成结构示例，不含正式benchmark所需的完整动态预览验收。
+
+## 模型与环境
+
+权重保留在 `models/Comfy-Org-MiniMax-H3/` 的diffusion_models、text_encoders、vae目录。
+[模型清单](configs/model-manifest.json)记录revision、大小和已有SHA；没有随代码上传权重。
+[ComfyUI模型路径](configs/extra_model_paths.yaml)指向同一份共享模型。
+
+精确ROCm10.1 / Torch / Triton / image锁见 [runtime-lock.json](configs/runtime-lock.json)。
+本机ComfyUI位于 `.runtime/engines/ComfyUI-standard/`，依赖与缓存位于.runtime对应子目录。
+保留现有Torch/Triton组合，不为整理目录升级环境。
+本机GPU执行仍通过父工作区ROCm10 launcher、共享锁和ownership监控；GPU3排除。
+
+本仓库是ComfyUI source extension。启动时加载本项目，保留
+`--enable-triton-backend --disable-mmap --preview-method latent2rgb`，并传入
+`--extra-model-paths-config <仓库>/configs/extra_model_paths.yaml`。
+根 `__init__.py/nodes.py` 是框架发现入口，实际节点代码位于integrations。
+
+## Attention
+
+```bash
+export H3_ATTENTION_BACKEND=reduced_error
+export H3_ATTENTION_HEAD_CHUNK=7
+export H3_ATTENTION_QUERY_TILE=128
+```
+
+| 名称 | 实现 |
+|---|---|
+| `reduced_error` | 默认、第一优先级；冻结INT8 QK / FP8 V编码、Ix HIP FP32 PV、直接BF16输出 |
+| `int8_qk_fp8_pv` | Ix原始native INT8 QK / FP8 PV控制路径 |
+| `fp8_qk_fp8_pv` | Ix SK1 native FP8 QK / FP8 PV控制路径 |
+| `sageplus_triton` | 原AMD SagePlus Triton语义对照 |
+| `torch_sdpa` | 显式PyTorch SDPA对照 |
+
+reduced_error另支持显式BR512。后端失败直接报错，不自动切换；改变配置须重启两个rank。
+各路径的完整精度说明和回放记录在本地 `vibe/project/ATTENTION_BACKENDS.md`；公开资格范围见 [关键结果](docs/RESULTS.md)。
+
+原生扩展在锁定环境、无GPU挂载时构建，缓存不进入Git：
+
+```bash
+python3 tools/build_attention.py ix
+python3 tools/build_attention.py native-tile
+```
+
+本机已有Ix安装继续复用；重编译使用新的 `IXMX_RDNA4_INSTALL`，保留原安装。
+
+## 文档和历史结果
+
+**本次只整理结构与路径，没有新的GPU或Standard成绩。**
+保留原数值门、fresh TE、10 NFE、预览与音频；新路径需真实输入回放后再进行完整Standard。
+GitHub只展示 [关键结果](docs/RESULTS.md)，完整研究上下文从本地 `vibe/README.md` 进入。
+日志、输出、完整参数表、迁移验收与历史文档均在vibe / archive保留，没有删除旧实验。
+只有main用于后续同步，旧研究分支留在本地，本轮没有push。
+
+MultiGPU采用MIT；Ix / SageAttention保留Apache-2.0和NOTICE。
+完整版本、许可证与移植范围见 [第三方说明](third_party/README.md)。

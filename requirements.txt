@@ -1,0 +1,3 @@
+# Torch/Triton/ROCm are provided by the locked environment in configs/runtime-lock.json.
+# ComfyUI supplies its own dependencies, including comfy_kitchen.
+# Do not pip-upgrade Torch/Triton to install this source extension.

@@ -1,0 +1,19 @@
+[project]
+name = "minimax-h3-rocm"
+version = "0.2.0"
+description = "MiniMax H3 inference on AMD ROCm, based on Kaihui-AMD MultiGPU"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+
+[project.urls]
+Repository = "https://github.com/zihaomu/minimax-h3-ROCm"
+Upstream = "https://github.com/Kaihui-AMD/ComfyUI-MiniMaxH3-MultiGPU"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+python_files = ["test_*.py"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
