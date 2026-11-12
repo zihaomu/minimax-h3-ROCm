@@ -11,6 +11,9 @@ BACKENDS = {
     "fp8_qk_fp8_pv": "Ix SK1 native FP8 QK / FP8 PV control",
     "sageplus_triton": "Frozen AMD SagePlus Triton semantic control",
     "torch_sdpa": "Explicit PyTorch SDPA control",
+    "aiter_6390_int8": "AITER PR 6390 gfx1201 HIP INT8 QK / FP8 PV control",
+    "aiter_4188_bf16": "AITER PR 4188 gfx1201 FlyDSL BF16 attention control",
+    "aiter_4188_fp8": "AITER PR 4188 gfx1201 FlyDSL per-tensor FP8 attention control",
 }
 
 

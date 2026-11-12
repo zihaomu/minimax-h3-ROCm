@@ -13,6 +13,18 @@
     "comfyui": {
       "repository": "https://github.com/Comfy-Org/ComfyUI",
       "commit": "0764232429b8cfb10b79b6f186c8cb23e0b22897"
+    },
+    "aiter_pr6390": {
+      "repository": "https://github.com/ROCm/aiter",
+      "pull_request": "https://github.com/ROCm/aiter/pull/6390",
+      "commit": "62019a492a433943abf6618fda38ced32d3aef52",
+      "path": "gfx1201 Sage HIP INT8 QK / FP8 PV"
+    },
+    "aiter_pr4188": {
+      "repository": "https://github.com/ROCm/aiter",
+      "pull_request": "https://github.com/ROCm/aiter/pull/4188",
+      "commit": "e4f40a683b52ef6ef09cf7d9e5851fea3e6a460e",
+      "path": "gfx1201 FlyDSL BF16 / FP8 attention"
     }
   },
   "original_local_head": "a1a34702759bbf4b4b803c98723fe4b969f18bcb",

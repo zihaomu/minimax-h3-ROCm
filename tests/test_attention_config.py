@@ -62,6 +62,16 @@ class ConfigurationTests(unittest.TestCase):
             for path in ("int8_qk_fp8_pv", "fp8_qk_fp8_pv"):
                 self.assertIs(implementation(AttentionConfig(backend=path)), getattr(Fake, path))
 
+    def test_aiter_controls_are_explicit_and_lazy(self):
+        class Fake:
+            aiter_6390_int8 = object()
+            aiter_4188_bf16 = object()
+            aiter_4188_fp8 = object()
+        with patch("minimax_h3_attention.dispatch.import_module", return_value=Fake) as loader:
+            for path in ("aiter_6390_int8", "aiter_4188_bf16", "aiter_4188_fp8"):
+                self.assertIs(implementation(AttentionConfig(backend=path)), getattr(Fake, path))
+                self.assertEqual(loader.call_args.args[0], "minimax_h3_attention.aiter.adapter")
+
 
 if __name__ == "__main__":
     unittest.main()

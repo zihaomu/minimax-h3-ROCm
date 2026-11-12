@@ -26,6 +26,8 @@ def implementation(config):
                 dropout_p=0.0, is_causal=False,
             ).transpose(1, 2).contiguous()
         return sdpa
+    if config.backend in ("aiter_6390_int8", "aiter_4188_bf16", "aiter_4188_fp8"):
+        return getattr(import_module("minimax_h3_attention.aiter.adapter"), config.backend)
     raise ValueError(config.backend)
 
 

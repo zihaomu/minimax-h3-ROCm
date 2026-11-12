@@ -24,7 +24,7 @@ def main():
     args = parser.parse_args()
     sys.path.insert(0, str(ROOT / "src"))
     from minimax_h3_attention import AttentionConfig, BACKENDS
-    assert AttentionConfig().backend == "reduced_error" and len(BACKENDS) == 5
+    assert AttentionConfig().backend == "reduced_error" and len(BACKENDS) == 8
     assert "torch" not in sys.modules, "Structure checks must not import GPU frameworks"
     assert (ROOT / "docs").is_dir(), "Curated public results are required"
     if (ROOT / "vibe").exists():

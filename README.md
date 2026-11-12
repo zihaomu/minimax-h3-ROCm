@@ -1,7 +1,7 @@
 # MiniMax H3 ROCm
 
 基于 [Kaihui-AMD/ComfyUI-MiniMaxH3-MultiGPU](https://github.com/Kaihui-AMD/ComfyUI-MiniMaxH3-MultiGPU) 的 AMD R9700 双卡推理项目。
-使用 ComfyUI 的 H3模型、token / QKV head分片和RCCL通信，提供五种可明确选择的attention。
+使用 ComfyUI 的 H3模型、token / QKV head分片和RCCL通信，提供八种可明确选择的attention。
 目标仓库：[zihaomu/minimax-h3-ROCm](https://github.com/zihaomu/minimax-h3-ROCm)。
 
 ## 从哪里开始
@@ -76,8 +76,14 @@ export H3_ATTENTION_QUERY_TILE=128
 | `fp8_qk_fp8_pv` | Ix SK1 native FP8 QK / FP8 PV控制路径 |
 | `sageplus_triton` | 原AMD SagePlus Triton语义对照 |
 | `torch_sdpa` | 显式PyTorch SDPA对照 |
+| `aiter_6390_int8` | 固定PR #6390提交，gfx1201 HIP INT8 QK / FP8 PV；使用该PR自己的量化准备与consumer |
+| `aiter_4188_bf16` | 固定PR #4188提交，gfx1201 FlyDSL BF16 dense attention |
+| `aiter_4188_fp8` | 同一FlyDSL提交的FP8量化与attention，单独精度对照 |
 
 reduced_error另支持显式BR512。后端失败直接报错，不自动切换；改变配置须重启两个rank。
+两个AITER上游源码及依赖安装在本机 `.runtime/`，固定提交见[来源记录](configs/provenance/upstreams.json)。
+这些后端的编码和数值边界不同于默认reduced_error；测速结果必须连同真实输入数值门和完整媒体验收一起阅读，不能据速度单独替换默认路径。
+可在当前目录运行 `python3 tools/provision_aiter.py` 下载固定源码并在无GPU挂载的锁定容器里准备隔离依赖。
 各路径的完整精度说明和回放记录在本地 `vibe/project/ATTENTION_BACKENDS.md`；公开资格范围见 [关键结果](docs/RESULTS.md)。
 
 原生扩展在锁定环境、无GPU挂载时构建，缓存不进入Git：
