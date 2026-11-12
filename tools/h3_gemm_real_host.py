@@ -13,11 +13,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--session", required=True)
+    parser.add_argument("--stages", action="store_true")
     args = parser.parse_args()
     fixture = args.fixture.resolve()
     meta = json.loads((fixture / "fixture.json").read_text())
     assert sha(fixture / meta["file"]) == meta["sha256"]
-    capture = json.loads((fixture.parents[2] / "hardware.json").read_text())
+    capture_file = next((parent / "hardware.json" for parent in (fixture, *fixture.parents)
+                         if (parent / "hardware.json").is_file()), None)
+    if capture_file is None:
+        raise FileNotFoundError("fixture has no ancestor hardware.json")
+    capture = json.loads(capture_file.read_text())
     session = ROOT / "runs" / args.session
     session.mkdir(parents=True, exist_ok=False)
     with ExitStack() as stack:
@@ -31,7 +36,7 @@ def main():
                         (ROOT / "tools/h3_gemm_real_host.py", ROOT / "tools/h3_gemm_real_replay.py")}})
         lease = LEASES / f"gpu-reservation-h3-gemm-real-{os.getpid()}.json"
         row = {"owner": f"h3-gemm-real-{os.getpid()}", "status": "active",
-               "physical_gpus": pair, "purpose": "trace-off real H3 block13 fc1 GEMM tile replay",
+               "physical_gpus": pair, "purpose": "trace-off real H3 block13 GEMM tile replay",
                "evidence": str(session), "updated_unix_ns": time.time_ns()}
         write(lease, row)
         cache = ROOT / ".runtime/cache/h3-gemm-real"
@@ -51,7 +56,8 @@ def main():
         command = [str(WORKSPACE / "rocm10-launch.sh"), "env",
                    *[f"{key}={value}" for key, value in environment.items()],
                    "python", str(ROOT / "tools/h3_gemm_real_replay.py"),
-                   "--fixture", str(fixture), "--output", str(output)]
+                   "--fixture", str(fixture), "--output", str(output),
+                   *(["--stages"] if args.stages else [])]
         write(session / "launch.json", {"command": command, "trace_enabled": False,
                                         "timing_basis": "GPU event", "fixture": str(fixture)})
         try:

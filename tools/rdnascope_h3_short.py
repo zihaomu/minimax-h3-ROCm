@@ -36,6 +36,7 @@ import torch
 from safetensors.torch import load_file, save_file
 import comfy.sd
 import comfy.quant_ops
+import comfy.ops
 import comfy.model_management as mm
 import folder_paths
 from comfy_extras.nodes_minimax_h3 import MiniMaxH3ImageToVideo
@@ -99,6 +100,7 @@ def main():
     write(APP / "result.json", record)
     plugin = None
     hooks = []
+    original_linear_input_act = None
     with torch.inference_mode():
         try:
             with mark("h3/short/load_models"):
@@ -131,8 +133,77 @@ def main():
             core = model.get_model_object("diffusion_model")
             hooks.append(core.register_forward_pre_hook(lambda *_: counts.__setitem__("dit", counts["dit"] + 1)))
             fixture_dir = os.environ.get("H3_GEMM_FIXTURE_DIR")
+            fixture_sites = tuple(os.environ.get("H3_GEMM_FIXTURE_SITES", "fc1").split(","))
             fixture = {"pending": False, "captured": False}
-            if fixture_dir:
+            if fixture_dir and fixture_sites != ("fc1",):
+                destination = Path(fixture_dir)
+                destination.mkdir(parents=True, exist_ok=False)
+                targets = {"qkv": core.blocks[13].attn.qkv_proj,
+                           "out": core.blocks[13].attn.out_proj,
+                           "fc2": core.blocks[13].mlp.fc2}
+                assert set(fixture_sites) <= targets.keys()
+                captured = set()
+                pending = {}
+
+                def prepare(site, x, module, input_act):
+                    if site in captured or site in pending:
+                        return
+                    weight = module.weight
+                    assert type(weight).__name__ == "QuantizedTensor"
+                    qdata, scale = comfy.quant_ops.TensorWiseINT8Layout.get_plain_tensors(weight)
+                    assert qdata.dtype == torch.int8 and scale.numel() == qdata.shape[0]
+                    values = {"x": x, "weight": qdata, "weight_scale": scale}
+                    if module.bias is not None:
+                        values["bias"] = module.bias
+                    pre_scale = getattr(module, "pre_quant_scale", None)
+                    if pre_scale is not None:
+                        values["pre_quant_scale"] = pre_scale
+                    pending[site] = ({key: value.detach().cpu().contiguous()
+                                      for key, value in values.items()},
+                                     {"convrot": bool(getattr(weight._params, "convrot", False)),
+                                      "convrot_groupsize": int(getattr(weight._params, "convrot_groupsize", 256)),
+                                      "input_act": input_act})
+
+                def finish(site, output):
+                    if site not in pending:
+                        return
+                    values, metadata = pending.pop(site)
+                    values["output"] = output.detach().cpu().contiguous()
+                    folder = destination / site
+                    folder.mkdir()
+                    path = folder / f"block13-{site}.safetensors"
+                    save_file(values, str(path))
+                    write(folder / "fixture.json", {
+                        "source": f"rank0 block13 {site} first call; real TP2 one-NFE input",
+                        "site": site, "file": path.name, "sha256": sha(path),
+                        "shapes": {key: list(value.shape) for key, value in values.items()},
+                        "dtypes": {key: str(value.dtype) for key, value in values.items()},
+                        **metadata, "out_dtype": str(output.dtype)})
+                    captured.add(site)
+                    fixture["captured"] = captured == set(fixture_sites)
+
+                for site in ("qkv", "out"):
+                    if site not in fixture_sites:
+                        continue
+                    target = targets[site]
+                    hooks.append(target.register_forward_pre_hook(
+                        lambda module, arguments, label=site: prepare(label, arguments[0], module, None)))
+                    hooks.append(target.register_forward_hook(
+                        lambda module, arguments, output, label=site: finish(label, output)))
+
+                if "fc2" in fixture_sites:
+                    original_linear_input_act = comfy.ops.linear_input_act
+
+                    def capture_linear_input_act(linear, x, input_act):
+                        if linear is targets["fc2"] and "fc2" not in captured:
+                            prepare("fc2", x, linear, input_act)
+                            result = original_linear_input_act(linear, x, input_act)
+                            finish("fc2", result)
+                            return result
+                        return original_linear_input_act(linear, x, input_act)
+
+                    comfy.ops.linear_input_act = capture_linear_input_act
+            elif fixture_dir:
                 destination = Path(fixture_dir)
                 destination.mkdir(parents=True, exist_ok=False)
                 target = core.blocks[13].mlp.fc1
@@ -228,6 +299,8 @@ def main():
                   "latents_sha256": record["sampled_latents_sha256"]}), flush=True)
             write(APP / "result.json", record)
         finally:
+            if original_linear_input_act is not None:
+                comfy.ops.linear_input_act = original_linear_input_act
             for hook in hooks:
                 hook.remove()
             if plugin is not None and plugin._RUNTIME is not None:

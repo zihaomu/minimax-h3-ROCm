@@ -1,4 +1,4 @@
-"""Trace-off, real TP2 block13 fc1 GEMM tile replay on locked ROCm 10.1."""
+"""Trace-off, real TP2 block13 INT8 projection replay on locked ROCm 10.1."""
 import argparse
 import ctypes
 import hashlib
@@ -58,6 +58,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--stages", action="store_true", help="time activation, rotation and row quantization separately")
     args = parser.parse_args(CLI_ARGS)
     args.output.mkdir(parents=True, exist_ok=False)
     (args.output / "container-id").write_text(os.environ["HOSTNAME"])
@@ -73,10 +74,10 @@ def main():
     assert sha(source) == meta["sha256"]
     values = {k: v.to("cuda:0") for k, v in load_file(str(source)).items()}
     x, w, scale, expected = (values[k] for k in ("x", "weight", "weight_scale", "output"))
-    if "pre_quant_scale" in values:
+    if "pre_quant_scale" in values and meta.get("site", "fc1") != "fc2":
         x = x * values["pre_quant_scale"].to(dtype=x.dtype)
     bias = values.get("bias")
-    assert x.shape == (4096, 5376) and w.shape == (28672, 5376)
+    assert x.ndim == 2 and w.ndim == 2 and expected.shape == (x.shape[0], w.shape[0])
     assert w.dtype == torch.int8 and scale.numel() == w.shape[0]
     dtype = expected.dtype
     import comfy.quant_ops
@@ -93,7 +94,9 @@ def main():
     assert baseline_check["exact"] and baseline_check["finite"], baseline_check
     baseline_a = elapsed_ms(full)
 
-    x2d = q._apply_input_act(x, meta["input_act"]).reshape(-1, x.shape[-1])
+    activated = q._apply_input_act(x, meta["input_act"])
+    x2d = activated.reshape(-1, activated.shape[-1])
+    assert x2d.shape[1] == w.shape[1]
     if meta["convrot"]:
         h = q._build_hadamard(meta["convrot_groupsize"], device=x.device, dtype=x.dtype)
         rotated = q._rotate_activation(x2d, h, meta["convrot_groupsize"])
@@ -149,7 +152,23 @@ def main():
         print("CANDIDATE", json.dumps(row), flush=True)
     direct_b = elapsed_ms(lambda: invoke(autotuned))
     baseline_b = elapsed_ms(full)
+    stages = {}
+    if args.stages:
+        def profile_stages():
+            result = {}
+            if meta["input_act"] is not None:
+                result["activation"] = elapsed_ms(
+                    lambda: q._apply_input_act(x, meta["input_act"]))
+            if meta["convrot"]:
+                result["rotate"] = elapsed_ms(
+                    lambda: q._rotate_activation(x2d, h, meta["convrot_groupsize"]))
+            result["row_quantize"] = elapsed_ms(
+                lambda: q.triton_quantize_rowwise(rotated if meta["convrot"] else x2d))
+            return result
+        stages = {"A": profile_stages(), "AA": profile_stages()}
     report = {"fixture_sha256": meta["sha256"], "source": meta["source"],
+              "site": meta.get("site", "fc1"),
+              "shape": {"m": m, "n": n, "k": k, "activation_input_k": x.shape[1]},
               "hardware": hardware, "torch": torch.__version__, "hip": torch.version.hip,
               "triton": triton.__version__, "image_id": os.environ["DEEPINFER_IMAGE_ID"],
               "output_check": baseline_check, "direct_check": direct_check,
@@ -158,6 +177,7 @@ def main():
               "full_linear_A": baseline_a, "full_linear_AA": baseline_b,
               "kernel_A": direct_a, "kernel_AA": direct_b,
               "candidates": rows, "timing_basis": "GPU event, same rank0 input, trace disabled"}
+    report["stages"] = stages
     (args.output / "replay.json").write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     print("REPLAY_COMPLETE", args.output / "replay.json", flush=True)
 

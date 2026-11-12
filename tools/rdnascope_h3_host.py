@@ -115,10 +115,14 @@ def main():
     parser.add_argument("--session", help="new session directory name under runs/")
     parser.add_argument("--oracle-only", action="store_true", help="trace-off A/A control only")
     parser.add_argument("--gemm-fixture", action="store_true", help="capture rank0 block13 fc1 real input without trace")
+    parser.add_argument("--gemm-sites", default="fc1", help="comma-separated block13 sites: fc1 or qkv,out,fc2")
     parser.add_argument("--pair", help="require physical GPU pair, for example 0,1")
     args = parser.parse_args()
     if args.gemm_fixture and not args.oracle_only:
         parser.error("--gemm-fixture requires --oracle-only")
+    sites = tuple(args.gemm_sites.split(","))
+    if not sites or any(site not in ("fc1", "qkv", "out", "fc2") for site in sites) or len(set(sites)) != len(sites):
+        parser.error("--gemm-sites must be distinct fc1,qkv,out,fc2 names")
     name = args.session or "rdnascope-h3-tp2-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     if Path(name).name != name or name in (".", ".."):
         raise ValueError("session must be a single new directory name")
@@ -166,7 +170,8 @@ def main():
         app = ["python", str(ROOT / "tools/rdnascope_h3_short.py")]
         command_oracle = [*launch, *[f"{k}={v}" for k, v in
                                       {**shared, "H3_DIAG_OUTPUT_DIR": str(oracle),
-                                       **({"H3_GEMM_FIXTURE_DIR": str(oracle / "app/gemm-fixture")}
+                                       **({"H3_GEMM_FIXTURE_DIR": str(oracle / "app/gemm-fixture"),
+                                           "H3_GEMM_FIXTURE_SITES": ",".join(sites)}
                                           if args.gemm_fixture else {})}.items()], *app]
         command_trace = [*launch, *[f"{k}={v}" for k, v in
                                      {**shared, "H3_DIAG_OUTPUT_DIR": str(trace)}.items()],
@@ -178,6 +183,7 @@ def main():
                                                  "capture_max_output_bytes": 1610612736},
                                       "scope": "one NFE from the Standard 10-step schedule; 50 TP2 blocks",
                                       "gemm_fixture": args.gemm_fixture,
+                                      "gemm_sites": sites if args.gemm_fixture else [],
                                       "formal_standard_timing": False})
         try:
             monitor_dir = session / "monitor"
