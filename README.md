@@ -119,6 +119,19 @@ RDNAScope 录制同输入的 `native_roi`，原始数据保留在忽略的 `runs
 该短请求只跑一次 NFE，不是 Standard 成绩。完整本地诊断与数值资格见
 `vibe/research/RDNASCOPE_H3_TP2_SHORT_20261112.md`。
 
+诊断 SwiGLU 开关时，可执行预热后的短 A/B/B/A 对照及两次 native 捕获：
+
+```bash
+python3 tools/rdnascope_h3_ab_host.py --session rdnascope-swiglu-ab-<new-id>
+```
+
+每个子请求包含一次首步预热和一次首步测量，均重新执行 TE；测量沿用
+Standard 的输入形状、噪声与 10 步 schedule 的第一段，不解码音视频。
+只在测量阶段采集：rank0 包含 sampler 加载，rank1 只包含 blocks，两者覆盖不同。
+消费者 sidecar 提供 ROI；`rdnascope_record_safe.py` 临时处理 alpha 版统计目录大小时
+SQLite journal 消失的竞态，仍保留超时、大小预算和符号链接检查，不修改工具仓库。
+结果用于诊断；A/A 漂移、输出核对或覆盖不足时，不作为提速与精度验收。
+
 ## 文档和历史结果
 
 仅 SwiGLU 融合已默认接入：本轮双 R9700 GPU5+6 Standard 中位 **220.019秒**，同卡对原路径控制 **205.910秒**；本轮没有证实端到端提速，资格范围见 [关键结果](docs/RESULTS.md)。
