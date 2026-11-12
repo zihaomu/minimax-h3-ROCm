@@ -45,7 +45,7 @@ def reserved():
     return active
 
 
-def choose(stack, session):
+def choose(stack, session, require_pair=None):
     busy = reserved()
     ready = []
     for label, info in REGISTRY["gpu_map"].items():
@@ -56,7 +56,9 @@ def choose(stack, session):
         if used < 1024**3:
             ready.append(index)
     preferred = [(0, 2), (0, 1), (1, 2), (5, 6), (6, 7)]
-    for pair in preferred + [p for p in combinations(sorted(ready), 2) if p not in preferred]:
+    candidates = ([tuple(require_pair)] if require_pair is not None else
+                  preferred + [p for p in combinations(sorted(ready), 2) if p not in preferred])
+    for pair in candidates:
         if any(i not in ready for i in pair):
             continue
         held = ExitStack()
@@ -112,14 +114,21 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--session", help="new session directory name under runs/")
     parser.add_argument("--oracle-only", action="store_true", help="trace-off A/A control only")
+    parser.add_argument("--gemm-fixture", action="store_true", help="capture rank0 block13 fc1 real input without trace")
+    parser.add_argument("--pair", help="require physical GPU pair, for example 0,1")
     args = parser.parse_args()
+    if args.gemm_fixture and not args.oracle_only:
+        parser.error("--gemm-fixture requires --oracle-only")
     name = args.session or "rdnascope-h3-tp2-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     if Path(name).name != name or name in (".", ".."):
         raise ValueError("session must be a single new directory name")
     session = ROOT / "runs" / name
     session.mkdir(parents=True, exist_ok=False)
     with ExitStack() as stack:
-        pair, snapshot = choose(stack, session)
+        required = tuple(map(int, args.pair.split(","))) if args.pair else None
+        if required is not None and (len(required) != 2 or len(set(required)) != 2 or 3 in required):
+            parser.error("--pair needs two distinct non-GPU3 physical IDs")
+        pair, snapshot = choose(stack, session, require_pair=required)
         devices = [REGISTRY["gpu_map"][str(i)] for i in pair]
         write(session / "hardware.json", {"physical_gpus": pair, "devices": devices,
                                           "preflight": snapshot, "excluded": [3]})
@@ -156,7 +165,9 @@ def main():
         launch = [str(WORKSPACE / "rocm10-launch.sh"), "env"]
         app = ["python", str(ROOT / "tools/rdnascope_h3_short.py")]
         command_oracle = [*launch, *[f"{k}={v}" for k, v in
-                                      {**shared, "H3_DIAG_OUTPUT_DIR": str(oracle)}.items()], *app]
+                                      {**shared, "H3_DIAG_OUTPUT_DIR": str(oracle),
+                                       **({"H3_GEMM_FIXTURE_DIR": str(oracle / "app/gemm-fixture")}
+                                          if args.gemm_fixture else {})}.items()], *app]
         command_trace = [*launch, *[f"{k}={v}" for k, v in
                                      {**shared, "H3_DIAG_OUTPUT_DIR": str(trace)}.items()],
                          "python", "-m", "rdnascope", "--config", str(ROOT / ".rdnascope.toml"),
@@ -166,6 +177,7 @@ def main():
                                       "budget": {"capture_timeout_seconds": 300,
                                                  "capture_max_output_bytes": 1610612736},
                                       "scope": "one NFE from the Standard 10-step schedule; 50 TP2 blocks",
+                                      "gemm_fixture": args.gemm_fixture,
                                       "formal_standard_timing": False})
         try:
             monitor_dir = session / "monitor"

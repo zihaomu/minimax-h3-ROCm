@@ -35,6 +35,7 @@ configure(worker=False)
 import torch
 from safetensors.torch import load_file, save_file
 import comfy.sd
+import comfy.quant_ops
 import comfy.model_management as mm
 import folder_paths
 from comfy_extras.nodes_minimax_h3 import MiniMaxH3ImageToVideo
@@ -129,6 +130,54 @@ def main():
             hooks.append(layer[0][1].register_forward_hook(lambda *_: counts.__setitem__("te", counts["te"] + 1)))
             core = model.get_model_object("diffusion_model")
             hooks.append(core.register_forward_pre_hook(lambda *_: counts.__setitem__("dit", counts["dit"] + 1)))
+            fixture_dir = os.environ.get("H3_GEMM_FIXTURE_DIR")
+            fixture = {"pending": False, "captured": False}
+            if fixture_dir:
+                destination = Path(fixture_dir)
+                destination.mkdir(parents=True, exist_ok=False)
+                target = core.blocks[13].mlp.fc1
+
+                def before_fc1(module, arguments):
+                    if fixture["captured"]:
+                        return
+                    x = arguments[0]
+                    assert x.ndim == 2 and x.shape == (4096, 5376)
+                    weight = module.weight
+                    assert type(weight).__name__ == "QuantizedTensor"
+                    qdata, scale = comfy.quant_ops.TensorWiseINT8Layout.get_plain_tensors(weight)
+                    assert qdata.dtype == torch.int8 and qdata.shape == (28672, 5376)
+                    values = {"x": x, "weight": qdata, "weight_scale": scale}
+                    if module.bias is not None:
+                        values["bias"] = module.bias
+                    pre_scale = getattr(module, "pre_quant_scale", None)
+                    if pre_scale is not None:
+                        values["pre_quant_scale"] = pre_scale
+                    fixture["values"] = {key: value.detach().cpu().contiguous()
+                                         for key, value in values.items()}
+                    fixture["convrot"] = bool(getattr(weight._params, "convrot", False))
+                    fixture["convrot_groupsize"] = int(getattr(weight._params, "convrot_groupsize", 256))
+                    fixture["pending"] = True
+
+                def after_fc1(module, arguments, output):
+                    if not fixture["pending"] or fixture["captured"]:
+                        return
+                    values = {**fixture["values"], "output": output.detach().cpu().contiguous()}
+                    path = destination / "block13-fc1.safetensors"
+                    save_file(values, str(path))
+                    write(destination / "fixture.json", {
+                        "source": "rank0 block13 mlp.fc1 first 4096-row chunk; real TP2 one-NFE input",
+                        "file": path.name, "sha256": sha(path),
+                        "shapes": {name: list(value.shape) for name, value in values.items()},
+                        "dtypes": {name: str(value.dtype) for name, value in values.items()},
+                        "convrot": fixture["convrot"],
+                        "convrot_groupsize": fixture["convrot_groupsize"],
+                        "input_act": None, "out_dtype": str(output.dtype)})
+                    fixture["captured"] = True
+                    fixture["pending"] = False
+                    del fixture["values"]
+
+                hooks.append(target.register_forward_pre_hook(before_fc1))
+                hooks.append(target.register_forward_hook(after_fc1))
             with mark("h3/short/fresh_te"):
                 conditioning, latent = MiniMaxH3ImageToVideo.execute(
                     clip, None, GEN["prompt"], GEN["width"], GEN["height"], GEN["frames"]).result
@@ -153,6 +202,8 @@ def main():
                 torch.cuda.synchronize()
             assert counts == {"te": 1, "dit": 1}, counts
             assert STATE["attention_calls"] == 50, STATE
+            if fixture_dir:
+                assert fixture["captured"], "block13 fc1 INT8 fixture was not captured"
             parts = dict(zip(("video", "audio"), sampled["samples"].unbind()))
             for value in parts.values():
                 assert bool(torch.isfinite(value).all())
