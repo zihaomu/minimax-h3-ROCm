@@ -14,9 +14,22 @@ def main():
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--session", required=True)
     parser.add_argument("--stages", action="store_true")
+    parser.add_argument("--fusion-probe", action="store_true", help="run isolated fc2 producer fusion candidates")
+    parser.add_argument("--parallel-only", action="store_true")
+    parser.add_argument("--swiglu-only", action="store_true")
     args = parser.parse_args()
+    if (args.parallel_only or args.swiglu_only) and not args.fusion_probe:
+        parser.error("fusion variants require --fusion-probe")
+    if args.parallel_only and args.swiglu_only:
+        parser.error("choose one fusion variant")
+    if args.stages and args.fusion_probe:
+        parser.error("--stages applies to the ordinary GEMM replay")
+    if Path(args.session).name != args.session or args.session in (".", ".."):
+        parser.error("--session must be a single new directory name")
     fixture = args.fixture.resolve()
     meta = json.loads((fixture / "fixture.json").read_text())
+    if args.fusion_probe and meta.get("site") != "fc2":
+        parser.error("--fusion-probe needs a fc2 fixture")
     assert sha(fixture / meta["file"]) == meta["sha256"]
     capture_file = next((parent / "hardware.json" for parent in (fixture, *fixture.parents)
                          if (parent / "hardware.json").is_file()), None)
@@ -30,13 +43,15 @@ def main():
         devices = [REGISTRY["gpu_map"][str(i)] for i in pair]
         write(session / "hardware.json", {"physical_gpus": pair, "devices": devices,
                                           "preflight": snapshot, "excluded": [3]})
+        chosen_script = (ROOT / "tools/h3_fc2_fusion_probe.py" if args.fusion_probe else
+                         ROOT / "tools/h3_gemm_real_replay.py")
         write(session / "source-manifest.json", {
             "fixture": {"path": str(fixture), "sha256": meta["sha256"]},
             "scripts": {str(path.relative_to(ROOT)): sha(path) for path in
-                        (ROOT / "tools/h3_gemm_real_host.py", ROOT / "tools/h3_gemm_real_replay.py")}})
+                        (ROOT / "tools/h3_gemm_real_host.py", chosen_script)}})
         lease = LEASES / f"gpu-reservation-h3-gemm-real-{os.getpid()}.json"
         row = {"owner": f"h3-gemm-real-{os.getpid()}", "status": "active",
-               "physical_gpus": pair, "purpose": "trace-off real H3 block13 GEMM tile replay",
+               "physical_gpus": pair, "purpose": "trace-off real H3 block13 fc2 producer fusion" if args.fusion_probe else "trace-off real H3 block13 GEMM tile replay",
                "evidence": str(session), "updated_unix_ns": time.time_ns()}
         write(lease, row)
         cache = ROOT / ".runtime/cache/h3-gemm-real"
@@ -55,9 +70,11 @@ def main():
             "OMP_NUM_THREADS": "16", "TOKENIZERS_PARALLELISM": "false"}
         command = [str(WORKSPACE / "rocm10-launch.sh"), "env",
                    *[f"{key}={value}" for key, value in environment.items()],
-                   "python", str(ROOT / "tools/h3_gemm_real_replay.py"),
+                   "python", str(chosen_script),
                    "--fixture", str(fixture), "--output", str(output),
-                   *(["--stages"] if args.stages else [])]
+                   *(["--stages"] if args.stages else []),
+                   *(["--parallel-only"] if args.parallel_only else []),
+                   *(["--swiglu-only"] if args.swiglu_only else [])]
         write(session / "launch.json", {"command": command, "trace_enabled": False,
                                         "timing_basis": "GPU event", "fixture": str(fixture)})
         try:
@@ -67,7 +84,7 @@ def main():
             write(session / "execution.json", outcome)
             if outcome["returncode"] or outcome["contamination"]:
                 raise RuntimeError("GEMM replay failed or was contaminated; inspect console.log")
-            assert (output / "replay.json").is_file()
+            assert (output / ("fusion.json" if args.fusion_probe else "replay.json")).is_file()
             print("GEMM_REPLAY_COMPLETE", session, flush=True)
         finally:
             write(lease, {**row, "status": "released", "updated_unix_ns": time.time_ns()})
