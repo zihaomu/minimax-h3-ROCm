@@ -129,6 +129,8 @@ def main():
 
     import json
     from minimax_h3_attention.runtime import STATE
+    from minimax_h3_amd_sp.fused_swiglu import STATE as SWIGLU_STATE
+    STATE["swiglu"] = dict(SWIGLU_STATE)
     output_dir = os.environ.get("H3_OUTPUT_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "runs"))
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "worker-stats.json"), "w") as handle:

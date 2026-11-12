@@ -23,7 +23,8 @@ def source_identity(config):
                 files[str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
     for name in ("nodes.py", "integrations/comfyui/nodes.py", "configs/runtime-lock.json"):
         files[name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
-    record = {"configuration": config.identity(), "source_sha256": files}
+    from minimax_h3_amd_sp.fused_swiglu import OPTIONS
+    record = {"configuration": config.identity(), "fc2_options": OPTIONS, "source_sha256": files}
     return hashlib.sha256(json.dumps(record, sort_keys=True).encode()).hexdigest()
 
 
@@ -91,4 +92,6 @@ def install_attention(module="minimax_h3_amd_sp.parallel_blocks", worker=False):
 
     target.optimized_attention = selected
     target._h3_attention_identity = identity
-    STATE.update(rank=1 if worker else 0, configuration=config.identity(), source_identity=identity)
+    from minimax_h3_amd_sp.fused_swiglu import OPTIONS
+    STATE.update(rank=1 if worker else 0, configuration=config.identity(), source_identity=identity,
+                 fc2_options=OPTIONS)

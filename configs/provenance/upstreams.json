@@ -106,15 +106,15 @@
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/worker.py",
       "source_sha256": "bab109a8210cbd6f6398d479ea7fc6f34a5acb9f6b43f4c9e110e1e24978be00",
       "destination": "src/minimax_h3_amd_sp/worker.py",
-      "destination_sha256": "adbfe96774d1279748689de55270c48a1cf986a96f7c991b94ca706054df0143",
+      "destination_sha256": "336f0e8f5dc0e538d716539a1df6d424c29842204330f27b7f005bff7beddcb2",
       "byte_identical": false
     },
     {
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/parallel_blocks.py",
       "source_sha256": "224bf3a8e8a7755335ef87600be39de50a4e279736839e9e11289274babf012f",
       "destination": "src/minimax_h3_amd_sp/parallel_blocks.py",
-      "destination_sha256": "224bf3a8e8a7755335ef87600be39de50a4e279736839e9e11289274babf012f",
-      "byte_identical": true
+      "destination_sha256": "479e107fa7e1ee61ad0edf410ff8d9f51dbcb4b1566c0949e8a948bc57d8d3e2",
+      "byte_identical": false
     },
     {
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/h3_forward.py",

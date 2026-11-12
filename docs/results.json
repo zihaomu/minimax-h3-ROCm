@@ -57,6 +57,20 @@
       "seconds": 213.709983016,
       "measurement": "1 full warmup + 3 hot requests, hot median",
       "qualification": "repeat/media/resource and same-output engineering comparison passed; original C1 failed"
+    },
+    {
+      "id": "r9700_swiglu_eager_control_20261112",
+      "hardware": "2x R9700 (GPU5+6)",
+      "seconds": 205.909510413,
+      "measurement": "trace-off Standard 1 warmup + 3 hot requests, original eager SwiGLU",
+      "qualification": "same source/card pair control; fresh TE, previews, audio and media/resource/repeat checks passed; original C1 failed"
+    },
+    {
+      "id": "r9700_swiglu_fused_default_20261112",
+      "hardware": "2x R9700 (GPU5+6)",
+      "seconds": 220.01886593,
+      "measurement": "trace-off Standard 1 warmup + 3 hot requests, only SwiGLU fused",
+      "qualification": "adopted per user decision; no end-to-end speed gain measured in this sequential batch comparison; AV latent and pre-encode video pixels raw-bit equal; decoded waveform relative L2 2.05e-6; lossy MP4 streams differ; original C1 failed"
     }
   ],
   "matched_historical_optimization": {
@@ -126,5 +140,37 @@
       "used_for_matched_ratio": false,
       "reason": "Different BF16 block math and quantizer domains; with native single as reference, dual video/audio relative L2 43.2067% / 12.2999%"
     }
+  },
+  "current_swiglu_standard": {
+    "date": "2026-11-12",
+    "attention": "reduced_error / 7 heads / BR128",
+    "default_fused_swiglu": true,
+    "eager_hot_seconds": [
+      205.909510413,
+      205.133031209,
+      219.441832949
+    ],
+    "fused_hot_seconds": [
+      222.331406201,
+      220.01886593,
+      208.174373594
+    ],
+    "eager_warmup_seconds": 228.335447196,
+    "fused_warmup_seconds": 245.415671425,
+    "eager_median_seconds": 205.909510413,
+    "fused_median_seconds": 220.01886593,
+    "observed_time_increase_percent": 6.852211677207332,
+    "AV_latents_raw_equal": true,
+    "preencode_video_pixels_raw_equal": true,
+    "waveform_relative_l2_max": 2.0467157492563444e-06,
+    "MP4_bitwise_equal": false,
+    "original_C1_passed": false,
+    "causal_speedup_proven": false,
+    "scope": "same pair, eager batch then fused batch; no trace/audit during timing; per-mode media/resource/repeat gates passed; strict cross-mode waveform byte equality failed and its decoder error is reported",
+    "source_base_commit": "beba7c7",
+    "source_manifest_sha256": "6decd00e05690cf04eb711a2a2ad050492bf9b5dd97433a61d42e79c69901ab5",
+    "qualification_sha256": "ef3b19d644399d8ddec1d64eccacb874974fcb995880d339bef85278d68208f3",
+    "quality_review_sha256": "695cd8b74d0df56e447fc175cd32b181ac410abb9772694ba8f5aebfa49276e5",
+    "media_compare_sha256": "3a5916b6c3c9978521ef77b83a6dc2e455b98e05590b7a02c777b638261a1aa7"
   }
 }

@@ -33,6 +33,7 @@ from minimax_h3_attention.config import AttentionConfig
 
 configure(worker=False)
 import torch
+from minimax_h3_amd_sp.fused_swiglu import STATE as SWIGLU_STATE, OPTIONS as SWIGLU_OPTIONS
 from safetensors.torch import load_file, save_file
 import comfy.sd
 import comfy.quant_ops
@@ -92,6 +93,7 @@ def main():
     os.environ["H3_OUTPUT_DIR"] = str(APP)
     weights = ROOT / "models/Comfy-Org-MiniMax-H3"
     record = {"status": "running", "purpose": "one of ten Standard NFE, unchanged 124-frame input",
+              "fc2_options": SWIGLU_OPTIONS,
               "source_identity": source_identity(AttentionConfig.from_environment()),
               "image_id": lock["container_image_id"], "torch": torch.__version__,
               "hip": torch.version.hip, "hardware": hardware,
@@ -285,6 +287,7 @@ def main():
                           sampled_latents_sha256=sha(result_path),
                           sampled_shapes={name: list(value.shape) for name, value in parts.items()},
                           finite=True, scopes=SCOPES)
+            record["swiglu"] = dict(SWIGLU_STATE)
             if "RDNASCOPE_RUN_DIR" in os.environ:
                 write(OUTPUT / "annotations.json", {
                     "schema_version": 1, "run_id": OUTPUT.name, "source": "app/result.json",

@@ -9,6 +9,7 @@ import comfy.quant_ops
 from comfy.ldm.modules.attention import optimized_attention
 
 from .partition import SequencePartition, localize_segments
+from .fused_swiglu import fc2
 
 
 _EXCHANGE_BUFFERS = {}
@@ -142,9 +143,7 @@ def _chunked_mlp(mlp, normalized, chunk_rows=4096):
     output = torch.empty_like(normalized)
     for start in range(0, normalized.shape[0], chunk_rows):
         stop = min(start + chunk_rows, normalized.shape[0])
-        output[start:stop] = comfy.ops.linear_input_act(
-            mlp.fc2, mlp.fc1(normalized[start:stop]), "swiglu"
-        )
+        output[start:stop] = fc2(mlp.fc2, mlp.fc1(normalized[start:stop]))
     return output
 
 

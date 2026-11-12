@@ -95,6 +95,14 @@ python3 tools/build_attention.py native-tile
 
 本机已有Ix安装继续复用；重编译使用新的 `IXMX_RDNA4_INSTALL`，保留原安装。
 
+## MLP SwiGLU
+
+TP2 的 fc2 默认使用融合 BF16 SwiGLU，保留 SiLU 与乘 up 之后的两次 BF16 舍入，
+后续 ConvRot256、行量化、INT8 GEMM 和输出边界沿用原实现。
+`H3_FC2_FUSED_SWIGLU=0` 显式选择原 eager 路径；切换时重启两个 rank。
+双 rank 会校验该开关一致。`H3_SWIGLU_AUDIT=1` 可逐调用核对激活的原始位模式，
+它会增加同步，只用于短验证，测速时关闭。
+
 ## RDNAScope 短诊断
 
 本项目的短请求、GPU 预约和输出核对在 `tools/rdnascope_h3_host.py` 与
@@ -113,7 +121,9 @@ RDNAScope 录制同输入的 `native_roi`，原始数据保留在忽略的 `runs
 
 ## 文档和历史结果
 
-当前main已完成Standard工程对照：双R9700热运行中位 **213.710秒**；同数学单卡对照 **880.113秒**。
+仅 SwiGLU 融合已默认接入：本轮双 R9700 GPU5+6 Standard 中位 **220.019秒**，同卡对原路径控制 **205.910秒**；本轮没有证实端到端提速，资格范围见 [关键结果](docs/RESULTS.md)。
+
+2026-11-11 整理基点的工程对照：双R9700热运行中位 **213.710秒**；同数学单卡对照 **880.113秒**。
 单卡因外部占用中断后恢复，3次有效热运行来自2个会话，各先完整预热。AV latent和完整FP32解码像素逐元素相同；音频VAE解码waveform跨模式relative L2为1.51e-6，各模式内完全重复。
 原C1精度门仍未通过，本轮为工程比较；完整资格范围见 [关键结果](docs/RESULTS.md)。
 保留原数值门、fresh TE、10 NFE、预览与音频；新路径需真实输入回放后再进行完整Standard。
