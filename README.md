@@ -95,6 +95,22 @@ python3 tools/build_attention.py native-tile
 
 本机已有Ix安装继续复用；重编译使用新的 `IXMX_RDNA4_INSTALL`，保留原安装。
 
+## RDNAScope 短诊断
+
+本项目的短请求、GPU 预约和输出核对在 `tools/rdnascope_h3_host.py` 与
+`tools/rdnascope_h3_short.py`。将 [配置模板](configs/rdnascope.example.toml)
+复制成根目录 `.rdnascope.toml`，填写同一 ROCm SDK 对应的官方 Trace Processor
+路径；RDNAScope 应以独立仓库安装并能在锁定容器中通过 `PYTHONPATH` 导入。
+
+```bash
+python3 tools/rdnascope_h3_host.py --session rdnascope-h3-tp2-<new-id>
+```
+
+脚本自动挑选两张空闲非 GPU3 卡，先执行 trace-off 一步 oracle，再由
+RDNAScope 录制同输入的 `native_roi`，原始数据保留在忽略的 `runs/`。
+该短请求只跑一次 NFE，不是 Standard 成绩。完整本地诊断与数值资格见
+`vibe/research/RDNASCOPE_H3_TP2_SHORT_20261112.md`。
+
 ## 文档和历史结果
 
 当前main已完成Standard工程对照：双R9700热运行中位 **213.710秒**；同数学单卡对照 **880.113秒**。

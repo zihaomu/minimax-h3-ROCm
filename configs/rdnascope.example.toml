@@ -1,0 +1,17 @@
+# Copy to .rdnascope.toml at the repository root and set the official
+# Trace Processor path for this machine. The ROCm tools are in the locked image.
+schema_version = 1
+
+[tools]
+rocprofv3 = "/opt/venv/lib/python3.13/site-packages/_rocm_sdk_core/bin/rocprofv3"
+rocpd_command = ["tools/rdnascope_rocpd.sh"]
+trace_processor = "/path/to/trace_processor_shell"
+
+[capture]
+backend = "rocm_native"
+profile = "native_roi"
+timeout_seconds = 300
+max_output_bytes = 1610612736
+
+[context]
+id = "minimax-h3-tp2-short-nfe1-gfx1201"
