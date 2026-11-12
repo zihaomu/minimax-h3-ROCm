@@ -103,6 +103,19 @@ TP2 的 fc2 默认使用融合 BF16 SwiGLU，保留 SiLU 与乘 up 之后的两�
 双 rank 会校验该开关一致。`H3_SWIGLU_AUDIT=1` 可逐调用核对激活的原始位模式，
 它会增加同步，只用于短验证，测速时关闭。
 
+独立 attention 寄存器压力实验使用 `tools/h3_attention_spill_build.py` 在无 GPU 的
+锁定镜像中构建到新的私有 `--cache`，再在宿主运行：
+
+```bash
+python3 tools/h3_attention_spill_host.py \
+  --build .runtime/cache/<new-build> --session attention-spill-<new-run>
+```
+
+该入口复用本地历史真实 TP2 QKV，核对同一编码、输入和 BF16 位模式后进行无 trace
+交错回放，分别测7-head核心和28-head完整adapter。单query组候选在私有源码中增加
+四处PV组访问的编译期保护；vendor和已安装扩展保持原样。实验不更改默认attention，
+也不代表完整Standard或通信性能。
+
 ## RDNAScope 短诊断
 
 本项目的短请求、GPU 预约和输出核对在 `tools/rdnascope_h3_host.py` 与
