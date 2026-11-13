@@ -123,6 +123,11 @@ buffer 迁移和 ModelPatcher 清理由原路径执行。每次请求仍运行 f
 TE offload中位8.342→0.317→3.155秒，总耗时中位189.882→186.549→180.831秒，
 未证实稳定端到端收益，保持默认关闭。
 
+`tools/h3_te_stage_probe.py` 提供消费方的低密度 TE 调用树诊断：
+拆分旧模型卸载、TE加载、tokenize、forward及offload，记录CPU/缺页计数；
+可复用预先创建的HIP事件对，在完整请求结束后读取。
+CPU scope和current-stream事件跨度均不等于纯GPU layer时间，诊断不生成Standard成绩。
+
 独立 attention 寄存器压力实验使用 `tools/h3_attention_spill_build.py` 在无 GPU 的
 锁定镜像中构建到新的私有 `--cache`，再在宿主运行：
 
