@@ -205,5 +205,55 @@
     "standard_record_sha256": "db6c9d4afdf2aa0fc7accf3b741dbe466e861629209fb7a341f00885672a5755",
     "media_numerical_review_sha256": "600e31e2a26531b512a3aedb9e5c4ec05c0550b801a4c50bb35338c32b75fb3c",
     "raw_repeat_review_sha256": "69a851343790cdbce7ecf11fe5b57f54088838321ee6055def2e338ae54593c2"
+  },
+  "te_cpu_backing_standard": {
+    "date": "2026-11-13",
+    "implementation_commit": "de07128",
+    "measurement_source_commit": "b967bea",
+    "physical_gpus": [
+      5,
+      6
+    ],
+    "attention": "reduced_error / heads7 / QG1 / BR256",
+    "fused_swiglu": true,
+    "full_requests": 12,
+    "same_instance": true,
+    "baseline_hot_seconds": [
+      189.882494552,
+      183.761399608,
+      205.776571437
+    ],
+    "backing_hot_seconds": [
+      193.662295575,
+      186.549036712,
+      179.870521931
+    ],
+    "baseline_repeat_hot_seconds": [
+      198.68952102,
+      180.247183266,
+      180.830554931
+    ],
+    "hot_medians_seconds": {
+      "baseline": 189.882494552,
+      "reuse": 186.549036712,
+      "baseline-repeat": 180.830554931
+    },
+    "TE_offload_medians_seconds": {
+      "baseline": 8.3419570249971,
+      "reuse": 0.3166112200124189,
+      "baseline-repeat": 3.155302772007417
+    },
+    "control_AA_delta_seconds": 9.051939621000002,
+    "stable_E2E_gain_screen_passed": false,
+    "within_session_incremental_raw_media_resource_passed": true,
+    "fresh_TE_retained": true,
+    "original_C1_passed": false,
+    "default_adopted": false,
+    "CPU_backing_storage_bytes": 15686891868,
+    "scope": "One full warmup plus three hot requests per phase, baseline/backing/baseline-repeat, trace/audits off. TE offload decreased; candidate was slower than post-control. No stable E2E gain or default adoption.",
+    "source_manifest_sha256": "9aeceb6834d9915a330be3a4991f26b2eccaf143ceda4a50688653a0ab3675ed",
+    "summary_sha256": "23b0a4eb7d11a794c47d150b2a068ae42590d5458b8a4b538b12b9e96c498450",
+    "raw_review_sha256": "16212a862950c1959a60860b7f818aced8d1e9366c91bf7a562244cc17754a36",
+    "media_numerical_review_sha256": "de5981cf3901e9d0844991b8e79ebe60bfbd45f7e3750b8b3f86439c7f100fc3"
   }
 }

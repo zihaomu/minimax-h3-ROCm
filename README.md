@@ -119,7 +119,9 @@ buffer 迁移和 ModelPatcher 清理由原路径执行。每次请求仍运行 f
 可能额外保留约14.61 GiB CPU存储，不支持训练或修改参数。
 不用时调用 `close()` 恢复原方法并释放引用。默认不创建此对象。真实 fresh TE 短 A/B/A 已通过 packed 权重、scale、
 卸载后 CPU 字节和 conditioning 原始位检查；短测控制漂移较大，尚无稳定倍率，
-完整 Standard 对照仍待完成。
+同实例完整 Standard A/B/A 各1+3已通过原始输出与媒体/资源门；
+TE offload中位8.342→0.317→3.155秒，总耗时中位189.882→186.549→180.831秒，
+未证实稳定端到端收益，保持默认关闭。
 
 独立 attention 寄存器压力实验使用 `tools/h3_attention_spill_build.py` 在无 GPU 的
 锁定镜像中构建到新的私有 `--cache`，再在宿主运行：
