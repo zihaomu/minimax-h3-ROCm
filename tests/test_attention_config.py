@@ -16,6 +16,25 @@ class ConfigurationTests(unittest.TestCase):
         self.assertEqual(AttentionConfig().backend, "reduced_error")
         self.assertEqual(AttentionConfig().head_chunk, 7)
         self.assertEqual(AttentionConfig().query_tile, 128)
+        self.assertEqual(AttentionConfig().query_groups, 2)
+
+    def test_qg1_requires_the_qualified_shape_configuration(self):
+        selected = AttentionConfig(query_tile=256, query_groups=1)
+        self.assertNotEqual(selected.digest(), AttentionConfig().digest())
+        for kwargs in ({"query_tile":128}, {"query_tile":512}, {"head_chunk":14,"query_tile":256},
+                       {"backend":"aiter_6390_int8","query_tile":256}):
+            with self.assertRaises(ValueError):
+                AttentionConfig(query_groups=1, **kwargs)
+        for groups in (0,3,True):
+            with self.assertRaises(ValueError):
+                AttentionConfig(query_groups=groups)
+
+    def test_qg1_resolves_lazily_to_its_own_entry(self):
+        class Fake:
+            attention = object()
+        with patch("minimax_h3_attention.dispatch.import_module", return_value=Fake) as loader:
+            self.assertIs(implementation(AttentionConfig(query_tile=256,query_groups=1)),Fake.attention)
+            self.assertEqual(loader.call_args.args[0],"minimax_h3_attention.native_query_group.adapter")
 
     def test_unknown_backend_is_rejected_without_fallback(self):
         with self.assertRaises(ValueError):

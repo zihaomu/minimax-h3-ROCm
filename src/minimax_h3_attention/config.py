@@ -22,14 +22,22 @@ class AttentionConfig:
     backend: str = DEFAULT_BACKEND
     head_chunk: int = 7
     query_tile: int = 128
+    query_groups: int = 2
 
     def __post_init__(self):
         if self.backend not in BACKENDS:
             raise ValueError(f"Unknown backend {self.backend!r}; choose {tuple(BACKENDS)}")
         if type(self.head_chunk) is not int or not 1 <= self.head_chunk <= 28:
             raise ValueError("head_chunk must be an integer in [1,28]")
-        if type(self.query_tile) is not int or self.query_tile not in (128, 512):
-            raise ValueError("query_tile must be 128 or 512")
+        if type(self.query_groups) is not int or self.query_groups not in (1, 2):
+            raise ValueError("query_groups must be 1 or 2")
+        if self.query_groups == 1:
+            if self.backend != DEFAULT_BACKEND or self.head_chunk != 7 or self.query_tile != 256:
+                raise ValueError("QG1 requires explicit reduced_error / 7 heads / BR256")
+        elif type(self.query_tile) is not int or self.query_tile not in (128, 512):
+            raise ValueError("QG2 query_tile must be 128 or 512")
+        if type(self.query_tile) is not int:
+            raise ValueError("query_tile must be an integer")
         if self.query_tile != 128 and self.backend != DEFAULT_BACKEND:
             raise ValueError("BR512 is implemented only for reduced_error")
 
@@ -37,7 +45,8 @@ class AttentionConfig:
     def from_environment(cls):
         return cls(os.environ.get("H3_ATTENTION_BACKEND", DEFAULT_BACKEND),
                    int(os.environ.get("H3_ATTENTION_HEAD_CHUNK", "7")),
-                   int(os.environ.get("H3_ATTENTION_QUERY_TILE", "128")))
+                   int(os.environ.get("H3_ATTENTION_QUERY_TILE", "128")),
+                   int(os.environ.get("H3_ATTENTION_QUERY_GROUPS", "2")))
 
     def identity(self):
         return asdict(self)

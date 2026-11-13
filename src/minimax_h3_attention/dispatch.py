@@ -9,6 +9,8 @@ def implementation(config):
     if not isinstance(config, AttentionConfig):
         raise TypeError("AttentionConfig required")
     if config.backend == "reduced_error":
+        if config.query_groups == 1:
+            return import_module("minimax_h3_attention.native_query_group.adapter").attention
         if config.query_tile == 512:
             module = import_module("minimax_h3_attention.native_tile.adapter")
             return lambda q, k, v: module.attention(q, k, v, 512)

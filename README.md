@@ -67,6 +67,7 @@ Python源码统一通过 `src/` 导入，两个rank和构建器使用相同路�
 export H3_ATTENTION_BACKEND=reduced_error
 export H3_ATTENTION_HEAD_CHUNK=7
 export H3_ATTENTION_QUERY_TILE=128
+export H3_ATTENTION_QUERY_GROUPS=2
 ```
 
 | 名称 | 实现 |
@@ -81,6 +82,11 @@ export H3_ATTENTION_QUERY_TILE=128
 | `aiter_4188_fp8` | 同一FlyDSL提交的FP8量化与attention，单独精度对照 |
 
 reduced_error另支持显式BR512。后端失败直接报错，不自动切换；改变配置须重启两个rank。
+单 query 组 BR256 使用显式 `H3_ATTENTION_QUERY_GROUPS=1`、
+`H3_ATTENTION_QUERY_TILE=256` 和 `H3_ATTENTION_QGROUP_BUILD=<spill构建目录>`。
+构建目录由 `tools/h3_attention_spill_build.py` 在锁定环境生成；扩展和源码 SHA 进入双 rank 校验。
+该入口目前限定 Standard 的 `[1,37787,7,128]` 分组，保留原编码、FP32 PV 和 BF16 输出。
+`H3_ATTENTION_QGROUP_AUDIT=1` 逐核心对照原核位模式，仅用于短验证；测速设为0。
 两个AITER上游源码及依赖安装在本机 `.runtime/`，固定提交见[来源记录](configs/provenance/upstreams.json)。
 这些后端的编码和数值边界不同于默认reduced_error；测速结果必须连同真实输入数值门和完整媒体验收一起阅读，不能据速度单独替换默认路径。
 可在当前目录运行 `python3 tools/provision_aiter.py` 下载固定源码并在无GPU挂载的锁定容器里准备隔离依赖。

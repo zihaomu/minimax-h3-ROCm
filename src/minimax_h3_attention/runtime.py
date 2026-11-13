@@ -25,6 +25,9 @@ def source_identity(config):
         files[name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     from minimax_h3_amd_sp.fused_swiglu import OPTIONS
     record = {"configuration": config.identity(), "fc2_options": OPTIONS, "source_sha256": files}
+    if config.query_groups == 1:
+        from .native_query_group.adapter import build_identity
+        record["native_query_group_build"] = build_identity()
     return hashlib.sha256(json.dumps(record, sort_keys=True).encode()).hexdigest()
 
 
@@ -95,3 +98,6 @@ def install_attention(module="minimax_h3_amd_sp.parallel_blocks", worker=False):
     from minimax_h3_amd_sp.fused_swiglu import OPTIONS
     STATE.update(rank=1 if worker else 0, configuration=config.identity(), source_identity=identity,
                  fc2_options=OPTIONS)
+    if config.query_groups == 1:
+        from .native_query_group.adapter import STATE as QUERY_GROUP_STATE
+        STATE["native_query_group"] = QUERY_GROUP_STATE
