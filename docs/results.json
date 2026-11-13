@@ -172,5 +172,38 @@
     "qualification_sha256": "ef3b19d644399d8ddec1d64eccacb874974fcb995880d339bef85278d68208f3",
     "quality_review_sha256": "695cd8b74d0df56e447fc175cd32b181ac410abb9772694ba8f5aebfa49276e5",
     "media_compare_sha256": "3a5916b6c3c9978521ef77b83a6dc2e455b98e05590b7a02c777b638261a1aa7"
+  },
+  "qg1_br256_tp2_standard": {
+    "date": "2026-11-13",
+    "source_commit": "6bc09cc",
+    "physical_gpus": [
+      5,
+      6
+    ],
+    "query_groups": 1,
+    "query_tile": 256,
+    "head_chunk": 7,
+    "fused_swiglu": true,
+    "warmup_seconds": 204.857578156,
+    "hot_seconds": [
+      218.901887578,
+      183.123222317,
+      199.943069856
+    ],
+    "hot_median_seconds": 199.943069856,
+    "real_input_dispatch_bitwise_gate_passed": true,
+    "both_rank_core_audit_passed": true,
+    "within_session_raw_repeat_media_resource_passed": true,
+    "strict_cross_path_short_latent_bitwise_passed": false,
+    "short_video_bitwise_equal": true,
+    "short_audio_relative_l2": 6.558319040838357e-07,
+    "original_C1_passed": false,
+    "default_adopted": false,
+    "causal_e2e_speedup_proven": false,
+    "scope": "Explicit QG1 BR256 engineering timing, full warmup + three hot Standard requests, trace/audits off. Cross-process default itself drifted. No new matched full BR128 control; historical comparisons are context only.",
+    "source_manifest_sha256": "a2df3f2652dd333e7f91c49a9a4ba9fba6e5fa5002e570c50145e40790d6c7b8",
+    "standard_record_sha256": "db6c9d4afdf2aa0fc7accf3b741dbe466e861629209fb7a341f00885672a5755",
+    "media_numerical_review_sha256": "600e31e2a26531b512a3aedb9e5c4ec05c0550b801a4c50bb35338c32b75fb3c",
+    "raw_repeat_review_sha256": "69a851343790cdbce7ecf11fe5b57f54088838321ee6055def2e338ae54593c2"
   }
 }
