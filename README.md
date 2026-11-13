@@ -127,6 +127,10 @@ TE offload中位8.342→0.317→3.155秒，总耗时中位189.882→186.549→18
 拆分旧模型卸载、TE加载、tokenize、forward及offload，记录CPU/缺页计数；
 可复用预先创建的HIP事件对，在完整请求结束后读取。
 CPU scope和current-stream事件跨度均不等于纯GPU layer时间，诊断不生成Standard成绩。
+已完成三个完整上下文观察：旧DiT卸载占TE约49–51%，TE加载不足0.9秒。
+后续第七次请求TE发生GPU page fault，精确原因未知，完整诊断缺少后置控制；
+独立五循环驻留回放通过，另捕获到旧视频VAE卸载增加2.36秒。
+这两类诊断范围分开记录于[关键结果](docs/RESULTS.md)，不证明稳定性、提速或观察器低开销。
 
 独立 attention 寄存器压力实验使用 `tools/h3_attention_spill_build.py` 在无 GPU 的
 锁定镜像中构建到新的私有 `--cache`，再在宿主运行：

@@ -255,5 +255,80 @@
     "summary_sha256": "23b0a4eb7d11a794c47d150b2a068ae42590d5458b8a4b538b12b9e96c498450",
     "raw_review_sha256": "16212a862950c1959a60860b7f818aced8d1e9366c91bf7a562244cc17754a36",
     "media_numerical_review_sha256": "de5981cf3901e9d0844991b8e79ebe60bfbd45f7e3750b8b3f86439c7f100fc3"
+  },
+  "te_lifecycle_diagnostic": {
+    "date": "2026-11-13",
+    "implementation_commit": "486c50f",
+    "attention": "reduced_error / heads7 / QG1 / BR256",
+    "fused_swiglu": true,
+    "TE_backing_enabled_for_diagnostic": true,
+    "new_Standard_score": false,
+    "full_context": {
+      "physical_gpus": [
+        5,
+        6
+      ],
+      "completed_requests": 6,
+      "observations": 3,
+      "completed_prefix_raw_media_resource_passed": true,
+      "experiment_completed": false,
+      "post_control_completed": false,
+      "TE_seconds_range": [
+        9.643657866,
+        11.246469299
+      ],
+      "old_DiT_unload_seconds_range": [
+        4.712739752,
+        5.784001105
+      ],
+      "old_DiT_percent_of_TE_range": [
+        48.86879872227106,
+        51.429483789319505
+      ],
+      "TE_load_seconds_range": [
+        0.725168577,
+        0.891739183
+      ],
+      "LM_forward_current_stream_seconds_range": [
+        2.843999755859375,
+        3.171127197265625
+      ],
+      "failure": "GPU page fault during request seven TE; exact call/kernel/cause unknown",
+      "final_worker_counts": "unknown"
+    },
+    "independent_residency_replay": {
+      "physical_gpus": [
+        6,
+        7
+      ],
+      "full_warmup_requests": 1,
+      "fresh_TE_cycles": 5,
+      "observations": 3,
+      "validation_passed": true,
+      "TE_cycle_seconds": [
+        10.305314428,
+        9.760490756,
+        12.150585778,
+        9.896597683,
+        10.164652999
+      ],
+      "observed_TE_tail_delta_seconds": 2.3900950220000006,
+      "old_video_VAE_unload_delta_seconds": 2.3622714069999997,
+      "fraction_of_TE_delta": 0.9883587829170414,
+      "scope": "same loaded_size counters, no DiT/VAE forwards between cycles; different allocator and prior execution history; not Standard timing or replacement full-run controls"
+    },
+    "historical_nonoffload_25s_tail_reproduced_in_completed_observations": false,
+    "original_C1_passed": false,
+    "observer_performance_impact": "inconclusive",
+    "causal_E2E_gain_proven": false,
+    "default_changed": false,
+    "CPU_tests": {
+      "tests": 41,
+      "subtests": 3
+    },
+    "summary_sha256": "08e6676273df833dadbf8d15da5a0d245959e91b186053e92f32db0072295f15",
+    "full_prefix_review_sha256": "a5d8576b4ed80a0c3c79ad72e7ccbc6857f7b9ee952d38b62278c2e0733d4352",
+    "residency_review_sha256": "79b0b9d588e6dc808c4f7a9a51177e5b1fe569e506c2609f86a5f2ab66831480",
+    "scope": "Consumer CPU lifecycle call tree and deferred current-stream event spans; no pure GPU layer, memory-bandwidth, or observer-overhead qualification."
   }
 }
