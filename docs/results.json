@@ -15,6 +15,11 @@
   "fresh_text_encoding": true,
   "preview_required": true,
   "current_main_GPU_requalified": false,
+  "cache_dit": {
+    "default_enabled": false,
+    "complete_standard_quality_and_speed_qualified": false,
+    "scope": "Optional approximate TP2 mode; listed full Standard scores use no cache"
+  },
   "rows": [
     {
       "id": "rtx5090_published",

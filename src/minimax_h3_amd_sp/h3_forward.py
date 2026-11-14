@@ -347,6 +347,7 @@ def run_rank_zero(
     object_group,
     reset_cache=False,
     profile=False,
+    cache_dit=None,
 ):
     hidden, time_embedding, rope, segments, state = prepare_rank_zero(
         dit,
@@ -375,6 +376,8 @@ def run_rank_zero(
         rank=0,
         transformer_options=transformer_options,
         profile=profile,
+        cache_dit=cache_dit,
+        reset_cache=reset_cache,
     )
     hidden = gather_rank_one_output(local_hidden, partition)
     return finish_rank_zero(

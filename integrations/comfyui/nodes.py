@@ -74,6 +74,7 @@ class AMDMinimaxH3SequenceParallelLoader(io.ComfyNode):
             description=(
                 "Runs one MiniMax H3 DiT forward across two GPUs using exact "
                 "head and sequence parallelism."
+                " Optional approximate Cache-DiT is disabled unless H3_CACHE_DIT=1."
             ),
             inputs=[
                 io.Combo.Input(
@@ -190,6 +191,17 @@ class AMDMinimaxH3SequenceParallelLoader(io.ComfyNode):
             )
 
         model.add_object_patch("diffusion_model._forward", distributed_forward)
+        if _RUNTIME.cache_dit is not None:
+            from comfy.patcher_extension import WrappersMP
+
+            def cache_sample(executor, *args, **kwargs):
+                _RUNTIME.last_timestep = None
+                try:
+                    return executor(*args, **kwargs)
+                finally:
+                    _RUNTIME.finish_cache_request()
+
+            model.add_wrapper_with_key(WrappersMP.OUTER_SAMPLE, "h3_cache_dit", cache_sample)
         logging.info(
             "[amd-h3-sp] model sharded across devices %s",
             resolved_devices,

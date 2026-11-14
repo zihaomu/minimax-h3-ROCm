@@ -23,6 +23,8 @@ The parent workspace ROCm instructions also apply.
 - Default attention is reduced_error with the retained frozen encoding/math,
   FP32 PV and BF16 output. Other backends are explicit controls, without automatic
   fallback. Precision exploration remains stopped by user choice.
+- Cache-DiT is an explicitly enabled, approximate TP2 sampling option, disabled by
+  default. Its cached outputs are separate from the no-cache Standard baseline.
 - Keep configs/runtime-lock.json Torch/Triton/HIP/image identities. Source/path
   changes require real-input replay before Standard timing; retain numerical
   gates, fresh TE, 10 NFE, previews, audio and complete media checks.

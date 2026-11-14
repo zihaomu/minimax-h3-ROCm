@@ -28,6 +28,8 @@ def main():
     sys.path.insert(0, args.comfy_root)
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    from minimax_h3_amd_sp.cache_dit import CacheDiTConfig, make_cache
+    cache_dit = make_cache()
 
     torch.cuda.set_device(0)
     dist.init_process_group(
@@ -71,6 +73,11 @@ def main():
         torch.cuda.memory_allocated() / 2**30,
     )
     dist.barrier()
+    cache_identity = cache_dit.identity() if cache_dit else CacheDiTConfig().identity()
+    identities = [None, None]
+    dist.all_gather_object(identities, cache_identity, group=object_group)
+    if identities[0] != identities[1]:
+        raise RuntimeError("Rank Cache-DiT configuration/dependency mismatch")
 
     profile = os.environ.get("AMD_H3_SP_PROFILE") == "1"
     while True:
@@ -79,6 +86,11 @@ def main():
         metadata = message[0]
         if metadata is None or metadata.get("op") == "shutdown":
             break
+        if metadata.get("op") == "cache_release":
+            if cache_dit is not None:
+                logging.info("rank %d Cache-DiT request: %s", args.rank, cache_dit.summary())
+                cache_dit.release()
+            continue
         if metadata.get("op") != "forward":
             raise RuntimeError(f"unknown worker operation: {metadata}")
         if metadata.get("reset_cache"):
@@ -123,6 +135,8 @@ def main():
                 rank=args.rank,
                 transformer_options={},
                 profile=profile,
+                cache_dit=cache_dit,
+                reset_cache=metadata.get("reset_cache", False),
             )
         send_tensor(local_hidden, peer=0)
         del local_hidden, time_embedding, rope
@@ -131,6 +145,9 @@ def main():
     from minimax_h3_attention.runtime import STATE
     from minimax_h3_amd_sp.fused_swiglu import STATE as SWIGLU_STATE
     STATE["swiglu"] = dict(SWIGLU_STATE)
+    if cache_dit is not None:
+        cache_dit.release()
+        STATE["cache_dit"] = cache_dit.summary()
     output_dir = os.environ.get("H3_OUTPUT_DIR", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "runs"))
     os.makedirs(output_dir, exist_ok=True)
     with open(os.path.join(output_dir, "worker-stats.json"), "w") as handle:

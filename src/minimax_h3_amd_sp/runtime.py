@@ -10,6 +10,7 @@ import torch
 import torch.distributed as dist
 
 from .h3_forward import run_rank_zero
+from .cache_dit import make_cache
 
 
 class DualGpuRuntime:
@@ -23,6 +24,7 @@ class DualGpuRuntime:
         self.process = None
         self.object_group = None
         self.last_timestep = None
+        self.cache_dit = make_cache()
         self.log_path = os.path.join(
             os.environ.get("AMD_H3_SP_LOGDIR", tempfile.gettempdir()),
             "amd_h3_sp_worker_1.log",
@@ -90,6 +92,12 @@ class DualGpuRuntime:
             timeout=timedelta(minutes=40),
         )
         dist.barrier()
+        from .cache_dit import CacheDiTConfig
+        cache_identity = self.cache_dit.identity() if self.cache_dit else CacheDiTConfig().identity()
+        identities = [None, None]
+        dist.all_gather_object(identities, cache_identity, group=self.object_group)
+        if identities[0] != identities[1]:
+            raise RuntimeError("Rank Cache-DiT configuration/dependency mismatch")
         self._check_worker()
         logging.info(
             "[amd-h3-sp] two-rank runtime ready on %s",
@@ -136,6 +144,7 @@ class DualGpuRuntime:
                 self.object_group,
                 reset_cache=reset_cache,
                 profile=os.environ.get("AMD_H3_SP_PROFILE") == "1",
+                cache_dit=self.cache_dit,
             )
         except Exception:
             logging.exception("[amd-h3-sp] distributed forward failed")
@@ -147,7 +156,18 @@ class DualGpuRuntime:
             self.object_group = None
             raise
 
+    def finish_cache_request(self):
+        if self.cache_dit is None:
+            return
+        logging.info("[amd-h3-sp] Cache-DiT request: %s", self.cache_dit.summary())
+        self.cache_dit.release()
+        self.last_timestep = None
+        if self.process is not None and self.process.poll() is None and self.object_group is not None:
+            dist.broadcast_object_list([{"op": "cache_release"}], src=0, group=self.object_group)
+
     def shutdown(self):
+        if self.cache_dit is not None:
+            self.cache_dit.release()
         if self.process is None:
             return
         try:

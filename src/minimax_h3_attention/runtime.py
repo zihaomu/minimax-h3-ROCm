@@ -24,7 +24,9 @@ def source_identity(config):
     for name in ("nodes.py", "integrations/comfyui/nodes.py", "configs/runtime-lock.json"):
         files[name] = hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
     from minimax_h3_amd_sp.fused_swiglu import OPTIONS
-    record = {"configuration": config.identity(), "fc2_options": OPTIONS, "source_sha256": files}
+    from minimax_h3_amd_sp.cache_dit import CacheDiTConfig
+    record = {"configuration": config.identity(), "fc2_options": OPTIONS, "source_sha256": files,
+              "cache_dit": CacheDiTConfig.from_environment().identity()}
     if config.query_groups == 1:
         from .native_query_group.adapter import build_identity
         record["native_query_group_build"] = build_identity()

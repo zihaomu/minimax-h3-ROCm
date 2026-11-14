@@ -25,6 +25,15 @@
       "pull_request": "https://github.com/ROCm/aiter/pull/4188",
       "commit": "e4f40a683b52ef6ef09cf7d9e5851fea3e6a460e",
       "path": "gfx1201 FlyDSL BF16 / FP8 attention"
+    },
+    "cache_dit": {
+      "repository": "https://github.com/vipshop/cache-dit",
+      "version": "1.5.3",
+      "package": "cache-dit==1.5.3",
+      "wheel_sha256": "f4564e68b5f6206d25712b06b4d9e0321ef96aadcd00e0ed4645be92d3fd9e75",
+      "diffusers_package": "diffusers==0.40.0",
+      "diffusers_wheel_sha256": "5b5da7c3ddb62152fa4afc577f02e050af688c797375c34fb2d01006da3f3541",
+      "scope": "Optional upstream DBCache context manager, consumer TP2 weighted gate and in-place-safe block ranges"
     }
   },
   "original_local_head": "a1a34702759bbf4b4b803c98723fe4b969f18bcb",
@@ -92,8 +101,8 @@
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/runtime.py",
       "source_sha256": "af388657779fe1d7345f7148998a0cc8a9cae1c580075e911820a7f20c0e1c66",
       "destination": "src/minimax_h3_amd_sp/runtime.py",
-      "destination_sha256": "af388657779fe1d7345f7148998a0cc8a9cae1c580075e911820a7f20c0e1c66",
-      "byte_identical": true
+      "destination_sha256": "b0f3aac54e1ac85aec868ed3034c69ab4790708006412a68c6a0b12d71151da0",
+      "byte_identical": false
     },
     {
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/peer_ops.py",
@@ -106,22 +115,22 @@
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/worker.py",
       "source_sha256": "bab109a8210cbd6f6398d479ea7fc6f34a5acb9f6b43f4c9e110e1e24978be00",
       "destination": "src/minimax_h3_amd_sp/worker.py",
-      "destination_sha256": "336f0e8f5dc0e538d716539a1df6d424c29842204330f27b7f005bff7beddcb2",
+      "destination_sha256": "fa867b300fc60bcda87027f95022aa3a7d5924d27d70947dd516f85cc1a703c1",
       "byte_identical": false
     },
     {
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/parallel_blocks.py",
       "source_sha256": "224bf3a8e8a7755335ef87600be39de50a4e279736839e9e11289274babf012f",
       "destination": "src/minimax_h3_amd_sp/parallel_blocks.py",
-      "destination_sha256": "479e107fa7e1ee61ad0edf410ff8d9f51dbcb4b1566c0949e8a948bc57d8d3e2",
+      "destination_sha256": "f0f4e1e379a03a77f5925da2a590137501eed3b9d702fb5f72a19d0acd95a7de",
       "byte_identical": false
     },
     {
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/h3_forward.py",
       "source_sha256": "8673dbc90d5d932820bed87ecb8bdcb8c490cc5386a50f4154bbbd610755d8ca",
       "destination": "src/minimax_h3_amd_sp/h3_forward.py",
-      "destination_sha256": "8673dbc90d5d932820bed87ecb8bdcb8c490cc5386a50f4154bbbd610755d8ca",
-      "byte_identical": true
+      "destination_sha256": "72bb495540af08669f0dc2394e79bdb4532f0d54dbfdc04a64b556ada480b618",
+      "byte_identical": false
     },
     {
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/minimax_h3_amd_sp/partition.py",
@@ -148,7 +157,7 @@
       "source_in_local_archive": "archive/legacy-20261111/minimax_h3_multi_gpu/upstream/nodes.py",
       "source_sha256": "9dfaae23c0769f6be4cf7daa87f5ec12ed7656e0757f54dd40bd0dab4ffa5854",
       "destination": "integrations/comfyui/nodes.py",
-      "destination_sha256": "454229205626d7c3e345af4713f4ffe4d70f8e63996ec3b0484c5521e3f62315",
+      "destination_sha256": "1471fa2ba72d494b785eb750844437043c9f65ebc801e8f3e0190420149f3b69",
       "byte_identical": false
     },
     {

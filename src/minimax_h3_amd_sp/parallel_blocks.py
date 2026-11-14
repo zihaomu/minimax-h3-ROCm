@@ -10,6 +10,7 @@ from comfy.ldm.modules.attention import optimized_attention
 
 from .partition import SequencePartition, localize_segments
 from .fused_swiglu import fc2
+from .cache_dit import geometry_signature
 
 
 _EXCHANGE_BUFFERS = {}
@@ -157,13 +158,30 @@ def run_blocks(
     rank,
     transformer_options=None,
     profile=False,
+    cache_dit=None,
+    reset_cache=False,
 ):
     partition = SequencePartition(total_rows)
     start, stop = partition.bounds(rank)
     segments = localize_segments(global_segments, start, stop)
     options = transformer_options or {}
 
-    for index, block in enumerate(blocks):
+    def run_range(hidden, first, last):
+        return _run_block_range(blocks, hidden, t_embedding, segments, rope_freqs,
+                                partition, rank, options, profile, first, last)
+
+    if cache_dit is None:
+        return run_range(local_hidden, 0, len(blocks))
+    if reset_cache:
+        cache_dit.reset()
+    signature = geometry_signature(total_rows, local_hidden, global_segments, rope_freqs)
+    return cache_dit.run(local_hidden, run_range, len(blocks), signature)
+
+
+def _run_block_range(blocks, local_hidden, t_embedding, segments, rope_freqs,
+                     partition, rank, options, profile, first, last):
+    for index in range(first, last):
+        block = blocks[index]
         started = time.perf_counter()
         shift_attn, scale_attn, gate_attn, shift_mlp, scale_mlp, gate_mlp = (
             block.adaln_proj(t_embedding)

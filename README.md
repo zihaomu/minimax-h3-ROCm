@@ -109,6 +109,41 @@ TP2 的 fc2 默认使用融合 BF16 SwiGLU，保留 SiLU 与乘 up 之后的两�
 双 rank 会校验该开关一致。`H3_SWIGLU_AUDIT=1` 可逐调用核对激活的原始位模式，
 它会增加同步，只用于短验证，测速时关闭。
 
+## 可选 Cache-DiT
+
+`Cache-DiT` 是**可选的近似计算模式，默认关闭**。TP2 的 50 个 DiT block
+在前 `Fn` 个 block 后比较相邻采样步的残差；命中时复用此前完整计算的中段残差，
+跳过中段 block，再执行尾部 `Bn` 个 block。两个 rank 使用全局、按元素数加权的
+相对 L1 门共同决定命中。每次采样请求独立建缓存，结束即释放特征张量。
+这是以潜在画质差异换取计算量的实验选项；阈值是中间残差门，**不是**最终视频或
+音频误差上限。10 NFE 的 Standard 任务前 3 步完整计算、且限制连续命中 1 步，
+可命中步数有限；当前没有经过完整同输入画质门和 1+3 热运行的速度结论。
+开启后的成绩须单独标注 Cache-DiT，不与原无缓存 5090 Standard 成绩当作同等计算量比较。
+
+先在锁定环境执行 `python3 tools/provision_cache_dit.py`，把固定版本的纯 Python
+`cache-dit==1.5.3` 与 `diffusers==0.40.0` 放进忽略的 `.runtime/deps/`；
+该工具不安装或改动 Torch、Triton、ROCm。启动 ComfyUI 前设置：
+
+```bash
+export H3_CACHE_DIT=1
+export H3_CACHE_DIT_FN=8
+export H3_CACHE_DIT_BN=0
+export H3_CACHE_DIT_THRESHOLD=0.12
+export H3_CACHE_DIT_WARMUP=3
+export H3_CACHE_DIT_MAX_CONTINUOUS=1
+```
+
+这是本项目的保守初始配置，可按同输入画质和速度对照调整。关闭时设
+`H3_CACHE_DIT=0` 或取消变量；关闭路径不导入可选依赖、不分配缓存特征。
+切换配置后重启 ComfyUI 和两个 rank；缺少固定版本依赖会明确报错，不自动回退。
+缓存只包住 DiT block 循环，不缓存 fresh TE、VAE、预览或 MP4 保存。
+rank 日志记录逐步命中、相对 L1、执行与跳过的 block 数，便于判断实际收益。
+固定真实 conditioning 的前 4 步功能回放中，阈值 0 的无命中路径与关闭模式
+音视频 latent 逐位一致；阈值 0.12 在另一次前 4 步回放中没有命中。
+阈值 0.50 仅用于验证命中分支：第 4 步跳过 42 个 block，视频/音频 latent
+相对 L2 分别为 3.01%/2.06%。该阈值不是画质推荐值，四步 latent 差异
+也不能代表完整视频观感或 10 NFE 的端到端速度。
+
 ## TE CPU 权重副本
 
 `src/minimax_h3_amd_sp/te_cpu_backing.py` 提供显式 `CPUWeightReuse(clip.patcher)`，
